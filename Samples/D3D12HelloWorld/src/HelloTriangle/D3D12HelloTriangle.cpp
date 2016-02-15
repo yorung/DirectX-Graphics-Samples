@@ -132,6 +132,8 @@ void D3D12HelloTriangle::LoadPipeline()
 	}
 
 	ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
+
+	deviceMan.Create(m_device);
 }
 
 // Load the sample assets.
@@ -164,10 +166,10 @@ void D3D12HelloTriangle::LoadAssets()
 		ThrowIfFailed(D3DCompileFromFile(GetAssetFullPath(L"shaders.hlsl").c_str(), nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
 
 		// Define the vertex input layout.
-		D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
+		InputElement inputElementDescs[] =
 		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+			CInputElement("POSITION", SF_R32G32B32_FLOAT, 0),
+			CInputElement("COLOR", SF_R32G32B32A32_FLOAT, 12),
 		};
 
 		// Describe and create the graphics pipeline state object (PSO).
@@ -211,6 +213,7 @@ void D3D12HelloTriangle::LoadAssets()
 		// recommended. Every time the GPU needs it, the upload heap will be marshalled 
 		// over. Please read up on Default Heap usage. An upload heap is used here for 
 		// code simplicity and because there are very few verts to actually transfer.
+#if 0
 		ThrowIfFailed(m_device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
@@ -218,14 +221,20 @@ void D3D12HelloTriangle::LoadAssets()
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&m_vertexBuffer)));
+#else
+		m_vertexBuffer = afCreateVertexBuffer(vertexBufferSize, triangleVertices);
+#endif
 
+#if 0
 		// Copy the triangle data to the vertex buffer.
 		UINT8* pVertexDataBegin;
 		CD3DX12_RANGE readRange(0, 0);		// We do not intend to read from this resource on the CPU.
 		ThrowIfFailed(m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
 		memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
 		m_vertexBuffer->Unmap(0, nullptr);
-
+#else
+//		afWriteBuffer(m_vertexBuffer, triangleVertices, sizeof(triangleVertices));
+#endif
 		// Initialize the vertex buffer view.
 		m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
 		m_vertexBufferView.StrideInBytes = sizeof(Vertex);
@@ -279,6 +288,7 @@ void D3D12HelloTriangle::OnDestroy()
 	WaitForPreviousFrame();
 
 	CloseHandle(m_fenceEvent);
+	deviceMan.Destroy();
 }
 
 void D3D12HelloTriangle::PopulateCommandList()

@@ -30,3 +30,7 @@
 #include <string>
 #include <wrl.h>
 #include <shellapi.h>
+
+using Microsoft::WRL::ComPtr;
+#include "../../../af/device_man_dx12.h"
+#include "../../../af/helper_dx12.h"

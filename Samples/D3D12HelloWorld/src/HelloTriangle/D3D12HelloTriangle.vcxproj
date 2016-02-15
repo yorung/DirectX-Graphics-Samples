@@ -109,6 +109,8 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\af\device_man_dx12.h" />
+    <ClInclude Include="..\..\..\af\helper_dx12.h" />
     <ClInclude Include="Win32Application.h" />
     <ClInclude Include="D3D12HelloTriangle.h" />
     <ClInclude Include="d3dx12.h" />
@@ -117,6 +119,8 @@
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\af\device_man_dx12.cpp" />
+    <ClCompile Include="..\..\..\af\helper_dx12.cpp" />
     <ClCompile Include="Win32Application.cpp" />
     <ClCompile Include="D3D12HelloTriangle.cpp" />
     <ClCompile Include="DXSample.cpp" />
