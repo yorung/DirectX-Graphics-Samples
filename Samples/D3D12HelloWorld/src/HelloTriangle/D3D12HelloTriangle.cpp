@@ -36,42 +36,9 @@ void D3D12HelloTriangle::OnInit()
 // Load the rendering pipeline dependencies.
 void D3D12HelloTriangle::LoadPipeline()
 {
-	deviceMan.Create();
+	deviceMan.Create(Win32Application::GetHwnd(), FrameCount);
 	m_device = deviceMan.GetDevice();
-	auto factory = deviceMan.GetFactory();
-
-	// Describe and create the command queue.
-	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-
-	ThrowIfFailed(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
-
-	// Describe and create the swap chain.
-	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-	swapChainDesc.BufferCount = FrameCount;
-	swapChainDesc.BufferDesc.Width = m_width;
-	swapChainDesc.BufferDesc.Height = m_height;
-	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	swapChainDesc.OutputWindow = Win32Application::GetHwnd();
-	swapChainDesc.SampleDesc.Count = 1;
-	swapChainDesc.Windowed = TRUE;
-
-	ComPtr<IDXGISwapChain> swapChain;
-	ThrowIfFailed(factory->CreateSwapChain(
-		m_commandQueue.Get(),		// Swap chain needs the queue so that it can force a flush on it.
-		&swapChainDesc,
-		&swapChain
-		));
-
-	ThrowIfFailed(swapChain.As(&m_swapChain));
-
-	// This sample does not support fullscreen transitions.
-	ThrowIfFailed(factory->MakeWindowAssociation(Win32Application::GetHwnd(), DXGI_MWA_NO_ALT_ENTER));
-
-	m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+	m_frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
 
 	// Create descriptor heaps.
 	{
@@ -92,7 +59,7 @@ void D3D12HelloTriangle::LoadPipeline()
 		// Create a RTV for each frame.
 		for (UINT n = 0; n < FrameCount; n++)
 		{
-			ThrowIfFailed(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
+			ThrowIfFailed(deviceMan.GetSwapChain()->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
 			m_device->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
 			rtvHandle.Offset(1, m_rtvDescriptorSize);
 		}
@@ -218,10 +185,10 @@ void D3D12HelloTriangle::OnRender()
 
 	// Execute the command list.
 	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
-	m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+	deviceMan.GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	// Present the frame.
-	ThrowIfFailed(m_swapChain->Present(1, 0));
+	ThrowIfFailed(deviceMan.GetSwapChain()->Present(1, 0));
 
 	WaitForPreviousFrame();
 }
@@ -280,7 +247,7 @@ void D3D12HelloTriangle::WaitForPreviousFrame()
 
 	// Signal and increment the fence value.
 	const UINT64 fence = m_fenceValue;
-	ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), fence));
+	ThrowIfFailed(deviceMan.GetCommandQueue()->Signal(m_fence.Get(), fence));
 	m_fenceValue++;
 
 	// Wait until the previous frame is finished.
@@ -290,5 +257,5 @@ void D3D12HelloTriangle::WaitForPreviousFrame()
 		WaitForSingleObject(m_fenceEvent, INFINITE);
 	}
 
-	m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+	m_frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
 }
