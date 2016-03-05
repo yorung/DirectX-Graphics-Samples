@@ -61,8 +61,6 @@ void D3D12HelloTriangle::LoadPipeline()
 			rtvHandle.ptr += m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		}
 	}
-
-	ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
 }
 
 // Load the sample assets.
@@ -125,12 +123,9 @@ void D3D12HelloTriangle::LoadAssets()
 		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
 	}
 
-	// Create the command list.
-	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr/*m_pipelineState.Get()*/, IID_PPV_ARGS(&m_commandList)));
-
 	// Command lists are created in the recording state, but there is nothing
 	// to record yet. The main loop expects it to be closed, so close it now.
-	ThrowIfFailed(m_commandList->Close());
+	ThrowIfFailed(deviceMan.GetCommandList()->Close());
 
 	// Create the vertex buffer.
 	{
@@ -172,6 +167,8 @@ void D3D12HelloTriangle::LoadAssets()
 		// list in our main loop but for now, we just want to wait for setup to 
 		// complete before continuing.
 		WaitForPreviousFrame();
+
+		m_frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
 	}
 }
 
@@ -184,16 +181,17 @@ void D3D12HelloTriangle::OnUpdate()
 void D3D12HelloTriangle::OnRender()
 {
 	// Record all the commands we need to render the scene into the command list.
-	PopulateCommandList();
+	PopulateCommandList(deviceMan.GetCommandList());
 
 	// Execute the command list.
-	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
+	ID3D12CommandList* ppCommandLists[] = { deviceMan.GetCommandList() };
 	deviceMan.GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	// Present the frame.
 	ThrowIfFailed(deviceMan.GetSwapChain()->Present(1, 0));
 
 	WaitForPreviousFrame();
+	m_frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
 }
 
 void D3D12HelloTriangle::OnDestroy()
@@ -206,43 +204,43 @@ void D3D12HelloTriangle::OnDestroy()
 	deviceMan.Destroy();
 }
 
-void D3D12HelloTriangle::PopulateCommandList()
+void D3D12HelloTriangle::PopulateCommandList(ID3D12GraphicsCommandList* list)
 {
 	// Command list allocators can only be reset when the associated 
 	// command lists have finished execution on the GPU; apps should use 
 	// fences to determine GPU execution progress.
-	ThrowIfFailed(m_commandAllocator->Reset());
+	ThrowIfFailed(deviceMan.GetCommandAllocator()->Reset());
 
 	// However, when ExecuteCommandList() is called on a particular command 
 	// list, that command list can then be reset at any time and must be before 
 	// re-recording.
-	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), nullptr/*m_pipelineState.Get()*/));
+	ThrowIfFailed(list->Reset(deviceMan.GetCommandAllocator(), nullptr/*m_pipelineState.Get()*/));
 
-	m_commandList->SetPipelineState(m_pipelineState.Get());
+	list->SetPipelineState(m_pipelineState.Get());
 
 	// Set necessary state.
-	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
-	m_commandList->RSSetViewports(1, &m_viewport);
-	m_commandList->RSSetScissorRects(1, &m_scissorRect);
+	list->SetGraphicsRootSignature(m_rootSignature.Get());
+	list->RSSetViewports(1, &m_viewport);
+	list->RSSetScissorRects(1, &m_scissorRect);
 
 	// Indicate that the back buffer will be used as a render target.
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
 	rtvHandle.ptr += m_frameIndex * m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+	list->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 
 	// Record commands.
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-	m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-	m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
-	m_commandList->DrawInstanced(3, 1, 0, 0);
+	list->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	list->IASetVertexBuffers(0, 1, &m_vertexBufferView);
+	list->DrawInstanced(3, 1, 0, 0);
 
 	// Indicate that the back buffer will now be used to present.
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
-	ThrowIfFailed(m_commandList->Close());
+	ThrowIfFailed(list->Close());
 }
 
 void D3D12HelloTriangle::WaitForPreviousFrame()
@@ -262,6 +260,4 @@ void D3D12HelloTriangle::WaitForPreviousFrame()
 		ThrowIfFailed(m_fence->SetEventOnCompletion(fence, m_fenceEvent));
 		WaitForSingleObject(m_fenceEvent, INFINITE);
 	}
-
-	m_frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
 }

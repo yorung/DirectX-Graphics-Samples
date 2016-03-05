@@ -7,13 +7,17 @@ DeviceManDX12::~DeviceManDX12()
 	assert(!factory);
 	assert(!device);
 	assert(!commandQueue);
+	assert(!commandAllocator);
+	assert(!commandList);
 }
 
 void DeviceManDX12::Destroy()
 {
-	factory.Reset();
+	commandList.Reset();
+	commandAllocator.Reset();
 	commandQueue.Reset();
 	device.Reset();
+	factory.Reset();
 }
 
 void DeviceManDX12::Create(HWND hWnd, int bufferCount)
@@ -76,4 +80,6 @@ void DeviceManDX12::Create(HWND hWnd, int bufferCount)
 	}
 
 	factory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER);
+	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
+	device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList));
 }

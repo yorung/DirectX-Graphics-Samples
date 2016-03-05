@@ -49,12 +49,10 @@ private:
 	D3D12_RECT m_scissorRect;
 	ComPtr<ID3D12Device> m_device;
 	ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
-	ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 	ComPtr<ID3D12RootSignature> m_rootSignature;
 	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
 	ComPtr<ID3D12DescriptorHeap> m_srvHeap;
 	ComPtr<ID3D12PipelineState> m_pipelineState;
-	ComPtr<ID3D12GraphicsCommandList> m_commandList;
 
 	// App resources.
 	ComPtr<ID3D12Resource> m_vertexBuffer;
@@ -70,6 +68,6 @@ private:
 	void LoadPipeline();
 	void LoadAssets();
 	std::vector<UINT8> GenerateTextureData();
-	void PopulateCommandList();
+	void PopulateCommandList(ID3D12GraphicsCommandList* list);
 	void WaitForPreviousFrame();
 };
