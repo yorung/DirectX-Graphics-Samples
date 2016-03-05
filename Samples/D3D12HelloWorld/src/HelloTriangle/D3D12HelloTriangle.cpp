@@ -129,7 +129,7 @@ void D3D12HelloTriangle::LoadAssets()
 	}
 
 	// Create the command list.
-	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
+	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr/*m_pipelineState.Get()*/, IID_PPV_ARGS(&m_commandList)));
 
 	// Command lists are created in the recording state, but there is nothing
 	// to record yet. The main loop expects it to be closed, so close it now.
@@ -219,7 +219,9 @@ void D3D12HelloTriangle::PopulateCommandList()
 	// However, when ExecuteCommandList() is called on a particular command 
 	// list, that command list can then be reset at any time and must be before 
 	// re-recording.
-	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), m_pipelineState.Get()));
+	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), nullptr/*m_pipelineState.Get()*/));
+
+	m_commandList->SetPipelineState(m_pipelineState.Get());
 
 	// Set necessary state.
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
