@@ -16,8 +16,7 @@ D3D12HelloTexture::D3D12HelloTexture(UINT width, UINT height, std::wstring name)
 	DXSample(width, height, name),
 	m_frameIndex(0),
 	m_viewport(),
-	m_scissorRect(),
-	m_rtvDescriptorSize(0)
+	m_scissorRect()
 {
 	m_viewport.Width = static_cast<float>(width);
 	m_viewport.Height = static_cast<float>(height);
@@ -55,20 +54,18 @@ void D3D12HelloTexture::LoadPipeline()
 		srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		ThrowIfFailed(m_device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap)));
-
-		m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	}
 
 	// Create frame resources.
 	{
-		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
+		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
 
 		// Create a RTV for each frame.
 		for (UINT n = 0; n < FrameCount; n++)
 		{
 			ThrowIfFailed(deviceMan.GetSwapChain()->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
 			m_device->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
-			rtvHandle.Offset(1, m_rtvDescriptorSize);
+			rtvHandle.ptr += m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		}
 	}
 
@@ -368,7 +365,8 @@ void D3D12HelloTexture::PopulateCommandList()
 	// Indicate that the back buffer will be used as a render target.
 	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
+	rtvHandle.ptr += m_frameIndex * m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 
 	// Record commands.
