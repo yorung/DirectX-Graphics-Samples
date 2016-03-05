@@ -66,6 +66,8 @@ void D3D12HelloTriangle::LoadPipeline()
 // Load the sample assets.
 void D3D12HelloTriangle::LoadAssets()
 {
+	GoMyDir();
+
 	// Create an empty root signature.
 	{
 		D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = { 0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT };
@@ -77,18 +79,8 @@ void D3D12HelloTriangle::LoadAssets()
 
 	// Create the pipeline state, which includes compiling and loading shaders.
 	{
-		ComPtr<ID3DBlob> vertexShader;
-		ComPtr<ID3DBlob> pixelShader;
-
-#if defined(_DEBUG)
-		// Enable better shader debugging with the graphics debugging tools.
-		UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-		UINT compileFlags = 0;
-#endif
-
-		ThrowIfFailed(D3DCompileFromFile(GetAssetFullPath(L"shaders.hlsl").c_str(), nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
-		ThrowIfFailed(D3DCompileFromFile(GetAssetFullPath(L"shaders.hlsl").c_str(), nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
+		ComPtr<ID3DBlob> vertexShader = CompileShader("shaders", "VSMain", "vs_5_0");
+		ComPtr<ID3DBlob> pixelShader = CompileShader("shaders", "PSMain", "ps_5_0");
 
 		// Define the vertex input layout.
 		InputElement inputElementDescs[] =

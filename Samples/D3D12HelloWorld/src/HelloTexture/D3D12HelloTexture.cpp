@@ -107,18 +107,8 @@ void D3D12HelloTexture::LoadAssets()
 
 	// Create the pipeline state, which includes compiling and loading shaders.
 	{
-		ComPtr<ID3DBlob> vertexShader;
-		ComPtr<ID3DBlob> pixelShader;
-
-#if defined(_DEBUG)
-		// Enable better shader debugging with the graphics debugging tools.
-		UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-		UINT compileFlags = 0;
-#endif
-
-		ThrowIfFailed(D3DCompileFromFile(GetAssetFullPath(L"shaders.hlsl").c_str(), nullptr, nullptr, "VSMain", "vs_5_0", compileFlags, 0, &vertexShader, nullptr));
-		ThrowIfFailed(D3DCompileFromFile(GetAssetFullPath(L"shaders.hlsl").c_str(), nullptr, nullptr, "PSMain", "ps_5_0", compileFlags, 0, &pixelShader, nullptr));
+		ComPtr<ID3DBlob> vertexShader = CompileShader("shaders", "VSMain", "vs_5_0");
+		ComPtr<ID3DBlob> pixelShader = CompileShader("shaders", "PSMain", "ps_5_0");
 
 		// Define the vertex input layout.
 		InputElement inputElementDescs[] =
@@ -127,14 +117,22 @@ void D3D12HelloTexture::LoadAssets()
 			CInputElement("TEXCOORD", SF_R32G32_FLOAT, 12),
 		};
 
+		D3D12_RASTERIZER_DESC rd = { D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK };
+		D3D12_BLEND_DESC bd = { FALSE, FALSE,{
+			FALSE,FALSE,
+			D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+			D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+			D3D12_LOGIC_OP_NOOP, D3D12_COLOR_WRITE_ENABLE_ALL },
+		};
+
 		// Describe and create the graphics pipeline state object (PSO).
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
 		psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
 		psoDesc.pRootSignature = m_rootSignature.Get();
 		psoDesc.VS = { reinterpret_cast<UINT8*>(vertexShader->GetBufferPointer()), vertexShader->GetBufferSize() };
 		psoDesc.PS = { reinterpret_cast<UINT8*>(pixelShader->GetBufferPointer()), pixelShader->GetBufferSize() };
-		psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-		psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		psoDesc.RasterizerState = rd;
+		psoDesc.BlendState = bd;
 		psoDesc.DepthStencilState.DepthEnable = FALSE;
 		psoDesc.DepthStencilState.StencilEnable = FALSE;
 		psoDesc.SampleMask = UINT_MAX;

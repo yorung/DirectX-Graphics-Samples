@@ -17,3 +17,20 @@ VBOID afCreateVertexBuffer(int size, const void* buf)
 	}
 	return v;
 }
+
+IBOID afCreateIndexBuffer(const AFIndex* indi, int numIndi)
+{
+	return afCreateVertexBuffer(numIndi * sizeof(AFIndex), indi);
+}
+
+SRVID afCreateTexture2D(AFDTFormat format, const IVec2& size, void *image)
+{
+	// TODO:
+	return SRVID();
+}
+
+SRVID afCreateTexture2D(AFDTFormat format, const struct TexDesc& desc, int mipCount, const AFTexSubresourceData datas[])
+{
+	// TODO:
+	return SRVID();
+}
