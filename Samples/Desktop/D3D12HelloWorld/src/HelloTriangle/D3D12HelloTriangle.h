@@ -46,9 +46,8 @@ private:
 	D3D12_RECT m_scissorRect;
 	ComPtr<ID3D12Device> m_device;
 	ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
-	ComPtr<ID3D12RootSignature> m_rootSignature;
 	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
-	ComPtr<ID3D12PipelineState> m_pipelineState;
+	ShaderMan::SMID shaderId;
 
 	// App resources.
 	ComPtr<ID3D12Resource> m_vertexBuffer;
@@ -62,6 +61,6 @@ private:
 
 	void LoadPipeline();
 	void LoadAssets();
-	void PopulateCommandList(ID3D12GraphicsCommandList* list);
+	void PopulateCommandList(ComPtr<ID3D12GraphicsCommandList> list);
 	void WaitForPreviousFrame();
 };

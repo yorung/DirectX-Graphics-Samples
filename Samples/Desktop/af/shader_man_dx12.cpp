@@ -20,8 +20,6 @@ ComPtr<ID3DBlob> CompileShader(const char* name, const char* entryPoint, const c
 	return blob;
 }
 
-#ifdef __d3d11_h__
-
 ShaderManDX12 shaderMan;
 
 ShaderManDX12::ShaderManDX12()
@@ -34,7 +32,7 @@ ShaderManDX12::~ShaderManDX12()
 	Destroy();
 }
 
-ShaderManDX12::SMID ShaderManDX12::Create(const char *name, const D3D11_INPUT_ELEMENT_DESC elements[], int numElements, BlendMode blendMode, DepthStencilMode depthStencilMode, CullMode cullMode)
+ShaderManDX12::SMID ShaderManDX12::Create(const char *name, const D3D12_INPUT_ELEMENT_DESC elements[], int numElements, BlendMode blendMode, DepthStencilMode depthStencilMode, CullMode cullMode)
 {
 	auto it = m_nameToId.find(name);
 	if (it != m_nameToId.end())
@@ -42,94 +40,61 @@ ShaderManDX12::SMID ShaderManDX12::Create(const char *name, const D3D11_INPUT_EL
 		return it->second;
 	}
 
-	Effect effect;
-	memset(&effect, 0, sizeof(effect));
+	ComPtr<ID3DBlob> signature;
+	ComPtr<ID3DBlob> error;
+	Effect e;
+	D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = { 0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT };
+	D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error);
+	deviceMan.GetDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&e.rso));
 
-	ID3DBlob* pBlobPS;
-	Compile(name, false, effect.pBlobVS);
-	Compile(name, true, pBlobPS);
-	HRESULT hr = deviceMan11.GetDevice()->CreateVertexShader(effect.pBlobVS->GetBufferPointer(), effect.pBlobVS->GetBufferSize(), nullptr, &effect.pVertexShader);
-	hr = deviceMan11.GetDevice()->CreatePixelShader(pBlobPS->GetBufferPointer(), pBlobPS->GetBufferSize(), nullptr, &effect.pPixelShader);
+	ComPtr<ID3DBlob> vertexShader = CompileShader("shaders", "VSMain", "vs_5_0");
+	ComPtr<ID3DBlob> pixelShader = CompileShader("shaders", "PSMain", "ps_5_0");
 
-	if (elements) {
-		hr = deviceMan11.GetDevice()->CreateInputLayout(elements, numElements, effect.pBlobVS->GetBufferPointer(), effect.pBlobVS->GetBufferSize(), &effect.pInputLayout);
-	//	assert(!hr);
-	}
-	SAFE_RELEASE(pBlobPS);
+	D3D12_RASTERIZER_DESC rd = { D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK };
+	D3D12_BLEND_DESC bd = { FALSE, FALSE,{
+		FALSE,FALSE,
+		D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+		D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+		D3D12_LOGIC_OP_NOOP, D3D12_COLOR_WRITE_ENABLE_ALL },
+	};
 
-	effect.elements = elements;
-	effect.numElements = numElements;
-	effect.blendMode = blendMode;
-	effect.depthStencilMode = depthStencilMode;
-	effect.cullMode = cullMode;
-	m_effects.push_back(effect);
-	return m_nameToId[name] = m_effects.size() - 1;
+	// Describe and create the graphics pipeline state object (PSO).
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+	psoDesc.InputLayout = { elements, (UINT)numElements };
+	psoDesc.pRootSignature = e.rso.Get();
+	psoDesc.VS = { reinterpret_cast<UINT8*>(vertexShader->GetBufferPointer()), vertexShader->GetBufferSize() };
+	psoDesc.PS = { reinterpret_cast<UINT8*>(pixelShader->GetBufferPointer()), pixelShader->GetBufferSize() };
+	psoDesc.RasterizerState = rd;
+	psoDesc.BlendState = bd;
+	psoDesc.DepthStencilState.DepthEnable = FALSE;
+	psoDesc.DepthStencilState.StencilEnable = FALSE;
+	psoDesc.SampleMask = UINT_MAX;
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	psoDesc.NumRenderTargets = 1;
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	psoDesc.SampleDesc.Count = 1;
+	ComPtr<ID3D12PipelineState> pso;
+	HRESULT hr = deviceMan.GetDevice()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&e.pso));
+	assert(hr == S_OK);
+
+	m_effects.push_back(e);
+	return m_nameToId[name] = (int)m_effects.size() - 1;
 }
 
 void ShaderManDX12::Destroy()
 {
-	for (auto it = m_effects.begin(); it != m_effects.end(); it++)
-	{
-		SAFE_RELEASE(it->pInputLayout);
-		SAFE_RELEASE(it->pVertexShader);
-		SAFE_RELEASE(it->pPixelShader);
-		SAFE_RELEASE(it->pBlobVS);
-	}
 	m_effects.clear();
 	m_nameToId.clear();
 	m_effects.push_back(Effect());	// make ID 0 invalid
 }
 
-void ShaderManDX12::Reload()
-{
-	std::vector<Effect> effs = m_effects;
-	std::vector<std::string> names;
-
-	for (SMID i = 0; i < (SMID)m_effects.size(); i++) {
-		auto it = std::find_if(m_nameToId.begin(), m_nameToId.end(), [i](std::pair<std::string, SMID> v) { return v.second == i; } );
-		assert(it != m_nameToId.end());
-		names.push_back(it->first);
-	}
-	Destroy();
-	for (int i = 0; i < (int)names.size(); i++) {
-		auto& ef = effs[i];
-		Create(names[i].c_str(), ef.elements, ef.numElements, ef.blendMode, ef.depthStencilMode, ef.cullMode);
-	}
-}
-
-void ShaderManDX12::Apply(SMID id)
+void ShaderManDX12::Apply(SMID id, ComPtr<ID3D12GraphicsCommandList>& list)
 {
 	if (id >= 0 && id < (SMID)m_effects.size())
 	{
-		Effect& it = m_effects[id];
-		deviceMan11.GetContext()->IASetInputLayout(it.pInputLayout);
-		deviceMan11.GetContext()->VSSetShader(it.pVertexShader, nullptr, 0);
-		deviceMan11.GetContext()->PSSetShader(it.pPixelShader, nullptr, 0);
-		afBlendMode(it.blendMode);
-		afDepthStencilMode(it.depthStencilMode);
-		afCullMode(it.cullMode);
+		auto& e = m_effects[id];
+		list->SetPipelineState(e.pso.Get());
+		list->SetGraphicsRootSignature(e.rso.Get());
 	}
 }
 
-FakeVAO::FakeVAO(int numBuffers, VBOID* const vbos_, const int strides_[], const UINT offsets_[], IBOID ibo_)
-{
-	ibo = ibo_;
-	vbos.resize(numBuffers);
-	d3dBuffers.resize(numBuffers);
-	strides.resize(numBuffers);
-	offsets.resize(numBuffers);
-	for (int i = 0; i < numBuffers; i++) {
-		vbos[i] = vbos_[i];
-		d3dBuffers[i] = vbos[i].Get();
-		strides[i] = (UINT)strides_[i];
-		offsets[i] = offsets_ ? offsets_[i] : 0;
-	}
-}
-
-void FakeVAO::Apply()
-{
-	deviceMan11.GetContext()->IASetVertexBuffers(0, vbos.size(), &d3dBuffers[0], &strides[0], &offsets[0]);
-	deviceMan11.GetContext()->IASetIndexBuffer(ibo.Get(), AFIndexTypeToDevice, 0);
-}
-
-#endif

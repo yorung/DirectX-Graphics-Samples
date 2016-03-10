@@ -68,51 +68,19 @@ void D3D12HelloTriangle::LoadAssets()
 {
 	GoMyDir();
 
-	// Create an empty root signature.
-	{
-		D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = { 0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT };
-		ComPtr<ID3DBlob> signature;
-		ComPtr<ID3DBlob> error;
-		ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
-		ThrowIfFailed(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)));
-	}
-
 	// Create the pipeline state, which includes compiling and loading shaders.
 	{
 		ComPtr<ID3DBlob> vertexShader = CompileShader("shaders", "VSMain", "vs_5_0");
 		ComPtr<ID3DBlob> pixelShader = CompileShader("shaders", "PSMain", "ps_5_0");
 
 		// Define the vertex input layout.
-		InputElement inputElementDescs[] =
+		static InputElement inputElementDescs[] =
 		{
 			CInputElement("POSITION", SF_R32G32B32_FLOAT, 0),
 			CInputElement("COLOR", SF_R32G32B32A32_FLOAT, 12),
 		};
 
-		D3D12_RASTERIZER_DESC rd = { D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK };
-		D3D12_BLEND_DESC bd = { FALSE, FALSE, {
-			FALSE,FALSE,
-			D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
-			D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
-			D3D12_LOGIC_OP_NOOP, D3D12_COLOR_WRITE_ENABLE_ALL },
-		};
-
-		// Describe and create the graphics pipeline state object (PSO).
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-		psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
-		psoDesc.pRootSignature = m_rootSignature.Get();
-		psoDesc.VS = { reinterpret_cast<UINT8*>(vertexShader->GetBufferPointer()), vertexShader->GetBufferSize() };
-		psoDesc.PS = { reinterpret_cast<UINT8*>(pixelShader->GetBufferPointer()), pixelShader->GetBufferSize() };
-		psoDesc.RasterizerState = rd;	//CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-		psoDesc.BlendState = bd;	//CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-		psoDesc.DepthStencilState.DepthEnable = FALSE;
-		psoDesc.DepthStencilState.StencilEnable = FALSE;
-		psoDesc.SampleMask = UINT_MAX;
-		psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		psoDesc.NumRenderTargets = 1;
-		psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-		psoDesc.SampleDesc.Count = 1;
-		ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)));
+		shaderId = shaderMan.Create("shaders", inputElementDescs, dimof(inputElementDescs), BM_NONE, DSM_DISABLE, CM_DISABLE);
 	}
 
 	// Command lists are created in the recording state, but there is nothing
@@ -196,7 +164,7 @@ void D3D12HelloTriangle::OnDestroy()
 	deviceMan.Destroy();
 }
 
-void D3D12HelloTriangle::PopulateCommandList(ID3D12GraphicsCommandList* list)
+void D3D12HelloTriangle::PopulateCommandList(ComPtr<ID3D12GraphicsCommandList> list)
 {
 	// Command list allocators can only be reset when the associated 
 	// command lists have finished execution on the GPU; apps should use 
@@ -208,10 +176,11 @@ void D3D12HelloTriangle::PopulateCommandList(ID3D12GraphicsCommandList* list)
 	// re-recording.
 	ThrowIfFailed(list->Reset(deviceMan.GetCommandAllocator(), nullptr/*m_pipelineState.Get()*/));
 
-	list->SetPipelineState(m_pipelineState.Get());
+	shaderMan.Apply(shaderId, list);
+//	list->SetPipelineState(m_pipelineState.Get());
+//	list->SetGraphicsRootSignature(m_rootSignature.Get());
 
 	// Set necessary state.
-	list->SetGraphicsRootSignature(m_rootSignature.Get());
 	list->RSSetViewports(1, &m_viewport);
 	list->RSSetScissorRects(1, &m_scissorRect);
 
