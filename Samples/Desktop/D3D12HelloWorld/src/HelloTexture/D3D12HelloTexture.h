@@ -56,7 +56,6 @@ private:
 
 	// App resources.
 	ComPtr<ID3D12Resource> m_vertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
 	ComPtr<ID3D12Resource> m_texture;
 
 	// Synchronization objects.

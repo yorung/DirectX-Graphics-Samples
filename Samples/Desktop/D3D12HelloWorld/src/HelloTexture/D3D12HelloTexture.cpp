@@ -160,25 +160,13 @@ void D3D12HelloTexture::LoadAssets()
 		// over. Please read up on Default Heap usage. An upload heap is used here for 
 		// code simplicity and because there are very few verts to actually transfer.
 		m_vertexBuffer = afCreateVertexBuffer(vertexBufferSize, triangleVertices);
-		ThrowIfFailed(m_device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&m_vertexBuffer)));
 
 		// Copy the triangle data to the vertex buffer.
 		UINT8* pVertexDataBegin;
-		CD3DX12_RANGE readRange(0, 0);		// We do not intend to read from this resource on the CPU.
+		D3D12_RANGE readRange = {};		// We do not intend to read from this resource on the CPU.
 		ThrowIfFailed(m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
 		memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
 		m_vertexBuffer->Unmap(0, nullptr);
-
-		// Initialize the vertex buffer view.
-		m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-		m_vertexBufferView.StrideInBytes = sizeof(Vertex);
-		m_vertexBufferView.SizeInBytes = vertexBufferSize;
 	}
 
 	// Note: ComPtr's are CPU objects but this resource needs to stay in scope until
@@ -343,9 +331,10 @@ void D3D12HelloTexture::PopulateCommandList(ID3D12GraphicsCommandList* list)
 	// However, when ExecuteCommandList() is called on a particular command 
 	// list, that command list can then be reset at any time and must be before 
 	// re-recording.
-	ThrowIfFailed(list->Reset(deviceMan.GetCommandAllocator(), m_pipelineState.Get()));
+	ThrowIfFailed(list->Reset(deviceMan.GetCommandAllocator(), nullptr));
 
 	// Set necessary state.
+	list->SetPipelineState(m_pipelineState.Get());
 	list->SetGraphicsRootSignature(m_rootSignature.Get());
 
 	ID3D12DescriptorHeap* ppHeaps[] = { m_srvHeap.Get() };
@@ -366,7 +355,8 @@ void D3D12HelloTexture::PopulateCommandList(ID3D12GraphicsCommandList* list)
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	list->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	list->IASetVertexBuffers(0, 1, &m_vertexBufferView);
+
+	afSetVertexBuffer(list, m_vertexBuffer, sizeof(Vertex));
 	list->DrawInstanced(3, 1, 0, 0);
 
 	// Indicate that the back buffer will now be used to present.

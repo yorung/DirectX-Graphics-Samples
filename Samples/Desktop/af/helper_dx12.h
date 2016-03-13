@@ -25,6 +25,7 @@ typedef ComPtr<ID3D12Resource> IBOID;
 typedef ComPtr<ID3D12Resource> VBOID;
 typedef ComPtr<ID3D12Resource> SRVID;
 
+void afSetVertexBuffer(ID3D12GraphicsCommandList* list, VBOID id, int stride);
 void afWriteBuffer(const IBOID id, const void* buf, int size);
 VBOID afCreateVertexBuffer(int size, const void* buf);
 IBOID afCreateIndexBuffer(const AFIndex* indi, int numIndi);

@@ -1,5 +1,12 @@
 #include "stdafx.h"
 
+void afSetVertexBuffer(ID3D12GraphicsCommandList* list, VBOID id, int stride)
+{
+	D3D12_RESOURCE_DESC desc = id->GetDesc();
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView = { id->GetGPUVirtualAddress(), desc.Width, stride };
+	list->IASetVertexBuffers(0, 1, &vertexBufferView);
+}
+
 void afWriteBuffer(const IBOID id, const void* buf, int size)
 {
 #ifdef _DEBUG
