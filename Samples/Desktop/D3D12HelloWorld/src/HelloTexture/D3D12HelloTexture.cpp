@@ -183,15 +183,15 @@ void D3D12HelloTexture::LoadAssets()
 		textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 
 		ThrowIfFailed(m_device->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 			D3D12_HEAP_FLAG_NONE,
 			&textureDesc,
-			D3D12_RESOURCE_STATE_COPY_DEST,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&m_texture)));
 
 		const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture.Get(), 0, 1);
-
+/*
 		// Create the GPU upload buffer.
 		ThrowIfFailed(m_device->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -200,7 +200,7 @@ void D3D12HelloTexture::LoadAssets()
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&textureUploadHeap)));
-
+			*/
 		// Copy data to the intermediate upload heap and then schedule a copy 
 		// from the upload heap to the Texture2D.
 		std::vector<UINT8> texture = GenerateTextureData();
@@ -210,9 +210,20 @@ void D3D12HelloTexture::LoadAssets()
 		textureData.RowPitch = TextureWidth * TexturePixelSize;
 		textureData.SlicePitch = textureData.RowPitch * TextureHeight;
 
+		D3D12_BOX box = { 0, 0, 0, TextureWidth, TextureHeight, 1 };
+		m_texture->WriteToSubresource(0, &box, &texture[0], textureData.RowPitch, textureData.SlicePitch);
+		/*
+		void* p;
+		D3D12_RANGE readRange = {};
+		m_texture->Map(0, &readRange, &p);
+		memcpy(p, (void*)texture[0], TextureWidth * TexturePixelSize * TextureHeight);
+		m_texture->Unmap(0, nullptr);
+		*/
+
+		/*
 		UpdateSubresources(deviceMan.GetCommandList(), m_texture.Get(), textureUploadHeap.Get(), 0, 0, 1, &textureData);
 		deviceMan.GetCommandList()->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
-
+		*/
 		// Describe and create a SRV for the texture.
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -224,8 +235,8 @@ void D3D12HelloTexture::LoadAssets()
 	
 	// Close the command list and execute it to begin the initial GPU setup.
 	ThrowIfFailed(deviceMan.GetCommandList()->Close());
-	ID3D12CommandList* ppCommandLists[] = { deviceMan.GetCommandList() };
-	deviceMan.GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+//	ID3D12CommandList* ppCommandLists[] = { deviceMan.GetCommandList() };
+//	deviceMan.GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	// Create synchronization objects and wait until assets have been uploaded to the GPU.
 	{
