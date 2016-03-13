@@ -75,11 +75,12 @@ void D3D12HelloTexture::LoadAssets()
 {
 	// Create the root signature.
 	{
-		CD3DX12_DESCRIPTOR_RANGE ranges[1];
-		ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
-		CD3DX12_ROOT_PARAMETER rootParameters[1];
-		rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
+		D3D12_DESCRIPTOR_RANGE range = { D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND };
+		D3D12_ROOT_PARAMETER rootParameter = {};
+		rootParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		rootParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParameter.DescriptorTable.NumDescriptorRanges = 1;
+		rootParameter.DescriptorTable.pDescriptorRanges = &range;
 
 		D3D12_STATIC_SAMPLER_DESC sampler = {};
 		sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
@@ -96,8 +97,7 @@ void D3D12HelloTexture::LoadAssets()
 		sampler.RegisterSpace = 0;
 		sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-		CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-		rootSignatureDesc.Init(_countof(rootParameters), rootParameters, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = { 1, &rootParameter, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT };
 
 		ComPtr<ID3DBlob> signature;
 		ComPtr<ID3DBlob> error;
