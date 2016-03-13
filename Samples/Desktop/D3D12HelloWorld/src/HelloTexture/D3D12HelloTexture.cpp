@@ -160,13 +160,6 @@ void D3D12HelloTexture::LoadAssets()
 		// over. Please read up on Default Heap usage. An upload heap is used here for 
 		// code simplicity and because there are very few verts to actually transfer.
 		m_vertexBuffer = afCreateVertexBuffer(vertexBufferSize, triangleVertices);
-
-		// Copy the triangle data to the vertex buffer.
-		UINT8* pVertexDataBegin;
-		D3D12_RANGE readRange = {};		// We do not intend to read from this resource on the CPU.
-		ThrowIfFailed(m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-		memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
-		m_vertexBuffer->Unmap(0, nullptr);
 	}
 
 	// Note: ComPtr's are CPU objects but this resource needs to stay in scope until
