@@ -45,6 +45,14 @@ enum DepthStencilMode {
 	DSM_DEPTH_CLOSEREQUAL_READONLY,
 };
 
+#define PrimitiveTopology D3D_PRIMITIVE_TOPOLOGY
+#define PT_TRIANGLESTRIP D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP
+#define PT_TRIANGLELIST D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST
+#define PT_LINELIST D3D_PRIMITIVE_TOPOLOGY_LINELIST
+
+void afDrawIndexed(ID3D12GraphicsCommandList* list, PrimitiveTopology pt, int numIndices, int start = 0, int instanceCount = 1);
+void afDraw(ID3D12GraphicsCommandList* list, PrimitiveTopology pt, int numVertices, int start = 0, int instanceCount = 1);
+
 typedef D3D12_SUBRESOURCE_DATA AFTexSubresourceData;
 typedef DXGI_FORMAT AFDTFormat;
 #define AFDT_INVALID DXGI_FORMAT_UNKNOWN
