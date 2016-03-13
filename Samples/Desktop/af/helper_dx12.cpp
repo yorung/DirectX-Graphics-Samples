@@ -2,6 +2,12 @@
 
 void afWriteBuffer(const IBOID id, const void* buf, int size)
 {
+#ifdef _DEBUG
+	D3D12_RESOURCE_DESC desc = id->GetDesc();
+	if (size > (int)desc.Width) {
+		return;
+	}
+#endif
 	void* p;
 	id->Map(0, nullptr, &p);
 	memcpy(p, buf, size);
