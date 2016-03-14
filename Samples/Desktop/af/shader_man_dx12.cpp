@@ -47,8 +47,8 @@ ShaderManDX12::SMID ShaderManDX12::Create(const char *name, const D3D12_INPUT_EL
 	D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error);
 	deviceMan.GetDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&e.rso));
 
-	ComPtr<ID3DBlob> vertexShader = CompileShader("shaders", "VSMain", "vs_5_0");
-	ComPtr<ID3DBlob> pixelShader = CompileShader("shaders", "PSMain", "ps_5_0");
+	ComPtr<ID3DBlob> vertexShader = CompileShader(name, "VSMain", "vs_5_0");
+	ComPtr<ID3DBlob> pixelShader = CompileShader(name, "PSMain", "ps_5_0");
 
 	D3D12_RASTERIZER_DESC rd = { D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK };
 	D3D12_BLEND_DESC bd = { FALSE, FALSE,{

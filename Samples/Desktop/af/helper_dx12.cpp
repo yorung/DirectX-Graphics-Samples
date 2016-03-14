@@ -38,8 +38,29 @@ IBOID afCreateIndexBuffer(const AFIndex* indi, int numIndi)
 
 SRVID afCreateTexture2D(AFDTFormat format, const IVec2& size, void *image)
 {
-	// TODO:
-	return SRVID();
+	D3D12_RESOURCE_DESC textureDesc = {};
+	textureDesc.MipLevels = 1;
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.Width = size.x;
+	textureDesc.Height = size.y;
+	textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	textureDesc.DepthOrArraySize = 1;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+
+	SRVID id;
+	HRESULT hr = deviceMan.GetDevice()->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&textureDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&id));
+
+	D3D12_BOX box = { 0, 0, 0, (UINT)size.x, (UINT)size.y, 1 };
+	id->WriteToSubresource(0, &box, image, size.x * 4, size.x * size.y * 4);
+	return id;
 }
 
 SRVID afCreateTexture2D(AFDTFormat format, const struct TexDesc& desc, int mipCount, const AFTexSubresourceData datas[])
