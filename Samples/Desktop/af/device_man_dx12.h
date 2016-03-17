@@ -6,10 +6,14 @@ class DeviceManDX12
 	ComPtr<ID3D12CommandQueue> commandQueue;
 	ComPtr<ID3D12CommandAllocator> commandAllocator;
 	ComPtr<ID3D12GraphicsCommandList> commandList;
+	ComPtr<ID3D12Fence> fence;
+	HANDLE fenceEvent = INVALID_HANDLE_VALUE;
+	UINT64 fenceValue = 1;
 public:
 	~DeviceManDX12();
 	void Create(HWND hWnd, int bufferCount);
 	void Destroy();
+	void WaitForPreviousFrame();
 	ComPtr<ID3D12Device> GetDevice() { return device; }
 	ComPtr<IDXGIFactory4> GetFactory() { return factory; }
 	ComPtr<IDXGISwapChain3> GetSwapChain() { return swapChain; }

@@ -9,15 +9,36 @@ DeviceManDX12::~DeviceManDX12()
 	assert(!commandQueue);
 	assert(!commandAllocator);
 	assert(!commandList);
+	assert(!fence);
 }
 
 void DeviceManDX12::Destroy()
 {
+	if (fenceEvent != INVALID_HANDLE_VALUE) {
+		WaitForPreviousFrame();
+		CloseHandle(fenceEvent);
+		fenceEvent = INVALID_HANDLE_VALUE;
+	}
 	commandList.Reset();
 	commandAllocator.Reset();
 	commandQueue.Reset();
 	device.Reset();
 	factory.Reset();
+	fence.Reset();
+	fenceValue = 1;
+}
+
+void DeviceManDX12::WaitForPreviousFrame()
+{
+	const UINT64 prevFenceValue = fenceValue;
+	deviceMan.GetCommandQueue()->Signal(fence.Get(), prevFenceValue);
+	fenceValue++;
+
+	if (fence->GetCompletedValue() < prevFenceValue)
+	{
+		fence->SetEventOnCompletion(prevFenceValue, fenceEvent);
+		WaitForSingleObject(fenceEvent, INFINITE);
+	}
 }
 
 void DeviceManDX12::Create(HWND hWnd, int bufferCount)
@@ -82,4 +103,11 @@ void DeviceManDX12::Create(HWND hWnd, int bufferCount)
 	factory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER);
 	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
 	device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList));
+
+	if (S_OK != device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))) {
+		Destroy();
+		return;
+	}
+	fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	assert (fenceEvent);
 }

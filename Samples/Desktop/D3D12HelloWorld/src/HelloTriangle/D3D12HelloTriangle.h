@@ -55,12 +55,8 @@ private:
 
 	// Synchronization objects.
 	UINT m_frameIndex;
-	HANDLE m_fenceEvent;
-	ComPtr<ID3D12Fence> m_fence;
-	UINT64 m_fenceValue;
 
 	void LoadPipeline();
 	void LoadAssets();
 	void PopulateCommandList(ComPtr<ID3D12GraphicsCommandList> list);
-	void WaitForPreviousFrame();
 };

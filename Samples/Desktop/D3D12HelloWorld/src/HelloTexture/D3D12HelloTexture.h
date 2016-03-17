@@ -60,13 +60,9 @@ private:
 
 	// Synchronization objects.
 	UINT m_frameIndex;
-	HANDLE m_fenceEvent;
-	ComPtr<ID3D12Fence> m_fence;
-	UINT64 m_fenceValue;
 
 	void LoadPipeline();
 	void LoadAssets();
 	std::vector<UINT8> GenerateTextureData();
 	void PopulateCommandList(ID3D12GraphicsCommandList* list);
-	void WaitForPreviousFrame();
 };

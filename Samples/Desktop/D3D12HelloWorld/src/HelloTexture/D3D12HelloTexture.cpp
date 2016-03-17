@@ -162,12 +162,6 @@ void D3D12HelloTexture::LoadAssets()
 		m_vertexBuffer = afCreateVertexBuffer(vertexBufferSize, triangleVertices);
 	}
 
-	// Note: ComPtr's are CPU objects but this resource needs to stay in scope until
-	// the command list that references it has finished executing on the GPU.
-	// We will flush the GPU at the end of this method to ensure the resource is not
-	// prematurely destroyed.
-	ComPtr<ID3D12Resource> textureUploadHeap;
-
 	// Create the texture.
 	{
 		IVec2 size(TextureWidth, TextureHeight);
@@ -185,26 +179,9 @@ void D3D12HelloTexture::LoadAssets()
 	
 	// Close the command list and execute it to begin the initial GPU setup.
 	ThrowIfFailed(deviceMan.GetCommandList()->Close());
-//	ID3D12CommandList* ppCommandLists[] = { deviceMan.GetCommandList() };
-//	deviceMan.GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
-	// Create synchronization objects and wait until assets have been uploaded to the GPU.
-	{
-		ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
-		m_fenceValue = 1;
-
-		// Create an event handle to use for frame synchronization.
-		m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-		if (m_fenceEvent == nullptr)
-		{
-			ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
-		}
-
-		// Wait for the command list to execute; we are reusing the same command 
-		// list in our main loop but for now, we just want to wait for setup to 
-		// complete before continuing.
-		WaitForPreviousFrame();
-	}
+	deviceMan.WaitForPreviousFrame();
+	m_frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
 }
 
 // Generate a simple black and white checkerboard texture.
@@ -262,16 +239,12 @@ void D3D12HelloTexture::OnRender()
 	// Present the frame.
 	ThrowIfFailed(deviceMan.GetSwapChain()->Present(1, 0));
 
-	WaitForPreviousFrame();
+	deviceMan.WaitForPreviousFrame();
+	m_frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
 }
 
 void D3D12HelloTexture::OnDestroy()
 {
-	// Ensure that the GPU is no longer referencing resources that are about to be
-	// cleaned up by the destructor.
-	WaitForPreviousFrame();
-
-	CloseHandle(m_fenceEvent);
 	deviceMan.Destroy();
 }
 
@@ -293,8 +266,9 @@ void D3D12HelloTexture::PopulateCommandList(ID3D12GraphicsCommandList* list)
 
 	ID3D12DescriptorHeap* ppHeaps[] = { m_srvHeap.Get() };
 	list->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+	D3D12_GPU_DESCRIPTOR_HANDLE pos = m_srvHeap->GetGPUDescriptorHandleForHeapStart();
+	list->SetGraphicsRootDescriptorTable(0, pos);
 
-	list->SetGraphicsRootDescriptorTable(0, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
 	list->RSSetViewports(1, &m_viewport);
 	list->RSSetScissorRects(1, &m_scissorRect);
 
@@ -316,26 +290,4 @@ void D3D12HelloTexture::PopulateCommandList(ID3D12GraphicsCommandList* list)
 	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
 	ThrowIfFailed(list->Close());
-}
-
-void D3D12HelloTexture::WaitForPreviousFrame()
-{
-	// WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
-	// This is code implemented as such for simplicity. The D3D12HelloFrameBuffering
-	// sample illustrates how to use fences for efficient resource usage and to
-	// maximize GPU utilization.
-
-	// Signal and increment the fence value.
-	const UINT64 fence = m_fenceValue;
-	ThrowIfFailed(deviceMan.GetCommandQueue()->Signal(m_fence.Get(), fence));
-	m_fenceValue++;
-
-	// Wait until the previous frame is finished.
-	if (m_fence->GetCompletedValue() < fence)
-	{
-		ThrowIfFailed(m_fence->SetEventOnCompletion(fence, m_fenceEvent));
-		WaitForSingleObject(m_fenceEvent, INFINITE);
-	}
-
-	m_frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
 }
