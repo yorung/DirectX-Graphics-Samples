@@ -41,6 +41,14 @@ void DeviceManDX12::WaitForPreviousFrame()
 	}
 }
 
+void DeviceManDX12::Present()
+{
+	ID3D12CommandList* lists[] = { commandList.Get() };
+	commandQueue->ExecuteCommandLists(_countof(lists), lists);
+	swapChain->Present(1, 0);
+	WaitForPreviousFrame();
+}
+
 void DeviceManDX12::Create(HWND hWnd, int bufferCount)
 {
 	Destroy();

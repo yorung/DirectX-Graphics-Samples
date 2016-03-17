@@ -126,14 +126,7 @@ void D3D12HelloTriangle::OnRender()
 	// Record all the commands we need to render the scene into the command list.
 	PopulateCommandList(deviceMan.GetCommandList());
 
-	// Execute the command list.
-	ID3D12CommandList* ppCommandLists[] = { deviceMan.GetCommandList() };
-	deviceMan.GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
-	// Present the frame.
-	ThrowIfFailed(deviceMan.GetSwapChain()->Present(1, 0));
-
-	deviceMan.WaitForPreviousFrame();
+	deviceMan.Present();
 	m_frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
 }
 

@@ -13,6 +13,7 @@ public:
 	~DeviceManDX12();
 	void Create(HWND hWnd, int bufferCount);
 	void Destroy();
+	void Present();
 	void WaitForPreviousFrame();
 	ComPtr<ID3D12Device> GetDevice() { return device; }
 	ComPtr<IDXGIFactory4> GetFactory() { return factory; }
