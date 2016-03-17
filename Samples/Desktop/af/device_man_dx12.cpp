@@ -10,6 +10,11 @@ DeviceManDX12::~DeviceManDX12()
 	assert(!commandAllocator);
 	assert(!commandList);
 	assert(!fence);
+	assert(!swapChain);
+	for (int i = 0; i < numFrameBuffers; i++) {
+		assert(!renderTargets[i]);
+	}
+	assert(!rtvHeap);
 }
 
 void DeviceManDX12::Destroy()
@@ -22,10 +27,16 @@ void DeviceManDX12::Destroy()
 	commandList.Reset();
 	commandAllocator.Reset();
 	commandQueue.Reset();
-	device.Reset();
+	swapChain.Reset();
+	for (int i = 0; i < numFrameBuffers; i++) {
+		renderTargets[i].Reset();
+	}
+	rtvHeap.Reset();
 	factory.Reset();
 	fence.Reset();
 	fenceValue = 1;
+	frameIndex = 0;
+	device.Reset();
 }
 
 void DeviceManDX12::WaitForPreviousFrame()
@@ -41,15 +52,25 @@ void DeviceManDX12::WaitForPreviousFrame()
 	}
 }
 
+void DeviceManDX12::SetRenderTarget()
+{
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvHeap->GetCPUDescriptorHandleForHeapStart();
+	rtvHandle.ptr += frameIndex * device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+}
+
 void DeviceManDX12::Present()
 {
 	ID3D12CommandList* lists[] = { commandList.Get() };
 	commandQueue->ExecuteCommandLists(_countof(lists), lists);
 	swapChain->Present(1, 0);
 	WaitForPreviousFrame();
+	frameIndex = swapChain->GetCurrentBackBufferIndex();
 }
 
-void DeviceManDX12::Create(HWND hWnd, int bufferCount)
+void DeviceManDX12::Create(HWND hWnd)
 {
 	Destroy();
 #ifndef NDEBUG
@@ -88,7 +109,7 @@ void DeviceManDX12::Create(HWND hWnd, int bufferCount)
 	GetClientRect(hWnd, &rc);
 
 	DXGI_SWAP_CHAIN_DESC sd = {};
-	sd.BufferCount = bufferCount;
+	sd.BufferCount = numFrameBuffers;
 	sd.BufferDesc.Width = rc.right - rc.left;
 	sd.BufferDesc.Height = rc.bottom - rc.top;
 	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -108,6 +129,21 @@ void DeviceManDX12::Create(HWND hWnd, int bufferCount)
 		return;
 	}
 
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+	rtvHeapDesc.NumDescriptors = numFrameBuffers;
+	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap));
+	for (int i = 0; i < numFrameBuffers; i++) {
+		if (S_OK != deviceMan.GetSwapChain()->GetBuffer(i, IID_PPV_ARGS(&renderTargets[i]))) {
+			Destroy();
+			return;
+		}
+		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvHeap->GetCPUDescriptorHandleForHeapStart();
+		rtvHandle.ptr += i * device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		device->CreateRenderTargetView(renderTargets[i].Get(), nullptr, rtvHandle);
+	}
+
 	factory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER);
 	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
 	device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList));
@@ -118,4 +154,6 @@ void DeviceManDX12::Create(HWND hWnd, int bufferCount)
 	}
 	fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	assert (fenceEvent);
+
+	frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
 }

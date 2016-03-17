@@ -35,7 +35,7 @@ void D3D12HelloTriangle::OnInit()
 // Load the rendering pipeline dependencies.
 void D3D12HelloTriangle::LoadPipeline()
 {
-	deviceMan.Create(Win32Application::GetHwnd(), FrameCount);
+	deviceMan.Create(Win32Application::GetHwnd());
 	m_device = deviceMan.GetDevice();
 	m_frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
 

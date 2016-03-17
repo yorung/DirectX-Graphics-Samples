@@ -33,7 +33,6 @@ public:
 	virtual void OnDestroy();
 
 private:
-	static const UINT FrameCount = 2;
 	static const UINT TextureWidth = 256;
 	static const UINT TextureHeight = 256;
 	static const UINT TexturePixelSize = 4;	// The number of bytes used to represent a pixel in the texture.
@@ -48,18 +47,13 @@ private:
 	D3D12_VIEWPORT m_viewport;
 	D3D12_RECT m_scissorRect;
 	ComPtr<ID3D12Device> m_device;
-	ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
 	ComPtr<ID3D12RootSignature> m_rootSignature;
-	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
 	ComPtr<ID3D12DescriptorHeap> m_srvHeap;
 	ComPtr<ID3D12PipelineState> m_pipelineState;
 
 	// App resources.
 	ComPtr<ID3D12Resource> m_vertexBuffer;
 	ComPtr<ID3D12Resource> m_texture;
-
-	// Synchronization objects.
-	UINT m_frameIndex;
 
 	void LoadPipeline();
 	void LoadAssets();
