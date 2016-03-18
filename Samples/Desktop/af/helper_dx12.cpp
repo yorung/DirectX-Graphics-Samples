@@ -80,3 +80,43 @@ void afDraw(ID3D12GraphicsCommandList* list, PrimitiveTopology pt, int numVertic
 	list->IASetPrimitiveTopology(pt);
 	list->DrawInstanced(numVertices, instanceCount, start, 0);
 }
+
+ComPtr<ID3D12PipelineState> afCreatePSO(const char *shaderName, const InputElement elements[], int numElements, BlendMode blendMode, DepthStencilMode depthStencilMode, CullMode cullMode, ComPtr<ID3D12RootSignature> rootSignature)
+{
+	ComPtr<ID3DBlob> vertexShader = CompileShader("shaders", "VSMain", "vs_5_0");
+	ComPtr<ID3DBlob> pixelShader = CompileShader("shaders", "PSMain", "ps_5_0");
+
+	// Define the vertex input layout.
+	InputElement inputElementDescs[] =
+	{
+		CInputElement("POSITION", SF_R32G32B32_FLOAT, 0),
+		CInputElement("TEXCOORD", SF_R32G32_FLOAT, 12),
+	};
+
+	D3D12_BLEND_DESC bd = { FALSE, FALSE,{
+		FALSE,FALSE,
+		D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+		D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+		D3D12_LOGIC_OP_NOOP, D3D12_COLOR_WRITE_ENABLE_ALL },
+	};
+
+	// Describe and create the graphics pipeline state object (PSO).
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+	psoDesc.InputLayout = { elements, (UINT)numElements };
+	psoDesc.pRootSignature = rootSignature.Get();
+	psoDesc.VS = { reinterpret_cast<UINT8*>(vertexShader->GetBufferPointer()), vertexShader->GetBufferSize() };
+	psoDesc.PS = { reinterpret_cast<UINT8*>(pixelShader->GetBufferPointer()), pixelShader->GetBufferSize() };
+	psoDesc.RasterizerState = { D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK };
+	psoDesc.BlendState = bd;
+	psoDesc.DepthStencilState.DepthEnable = FALSE;
+	psoDesc.DepthStencilState.StencilEnable = FALSE;
+	psoDesc.SampleMask = UINT_MAX;
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	psoDesc.NumRenderTargets = 1;
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	psoDesc.SampleDesc.Count = 1;
+	ComPtr<ID3D12PipelineState> pso;
+	HRESULT hr = deviceMan.GetDevice()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso));
+	assert(hr == S_OK);
+	return pso;
+}
