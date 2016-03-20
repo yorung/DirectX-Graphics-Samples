@@ -45,17 +45,11 @@ private:
 	D3D12_VIEWPORT m_viewport;
 	D3D12_RECT m_scissorRect;
 	ComPtr<ID3D12Device> m_device;
-	ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
-	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
 	ComPtr<ID3D12RootSignature> m_rootSignature;
 	ComPtr<ID3D12PipelineState> m_pipelineState;
 
 	// App resources.
 	ComPtr<ID3D12Resource> m_vertexBuffer;
-	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
-
-	// Synchronization objects.
-	UINT m_frameIndex;
 
 	void LoadPipeline();
 	void LoadAssets();

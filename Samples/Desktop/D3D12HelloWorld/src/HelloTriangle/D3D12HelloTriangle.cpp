@@ -14,7 +14,6 @@
 
 D3D12HelloTriangle::D3D12HelloTriangle(UINT width, UINT height, std::wstring name) :
 	DXSample(width, height, name),
-	m_frameIndex(0),
 	m_viewport(),
 	m_scissorRect()
 {
@@ -37,30 +36,6 @@ void D3D12HelloTriangle::LoadPipeline()
 {
 	deviceMan.Create(Win32Application::GetHwnd());
 	m_device = deviceMan.GetDevice();
-	m_frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
-
-	// Create descriptor heaps.
-	{
-		// Describe and create a render target view (RTV) descriptor heap.
-		D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-		rtvHeapDesc.NumDescriptors = FrameCount;
-		rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-		rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-		ThrowIfFailed(m_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
-	}
-
-	// Create frame resources.
-	{
-		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
-
-		// Create a RTV for each frame.
-		for (UINT n = 0; n < FrameCount; n++)
-		{
-			ThrowIfFailed(deviceMan.GetSwapChain()->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
-			m_device->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
-			rtvHandle.ptr += m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-		}
-	}
 }
 
 // Load the sample assets.
@@ -102,15 +77,9 @@ void D3D12HelloTriangle::LoadAssets()
 		// over. Please read up on Default Heap usage. An upload heap is used here for 
 		// code simplicity and because there are very few verts to actually transfer.
 		m_vertexBuffer = afCreateVertexBuffer(vertexBufferSize, triangleVertices);
-
-		// Initialize the vertex buffer view.
-		m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-		m_vertexBufferView.StrideInBytes = sizeof(Vertex);
-		m_vertexBufferView.SizeInBytes = vertexBufferSize;
 	}
 
 	deviceMan.WaitForPreviousFrame();
-	m_frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
 }
 
 // Update frame-based values.
@@ -125,7 +94,6 @@ void D3D12HelloTriangle::OnRender()
 	PopulateCommandList(deviceMan.GetCommandList());
 
 	deviceMan.Present();
-	m_frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
 }
 
 void D3D12HelloTriangle::OnDestroy()
@@ -153,21 +121,16 @@ void D3D12HelloTriangle::PopulateCommandList(ComPtr<ID3D12GraphicsCommandList> l
 	list->RSSetScissorRects(1, &m_scissorRect);
 
 	// Indicate that the back buffer will be used as a render target.
-	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(deviceMan.GetRenderTarget().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
-	rtvHandle.ptr += m_frameIndex * m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	list->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+	deviceMan.SetRenderTarget();
 
 	// Record commands.
-	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-	list->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-	list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	list->IASetVertexBuffers(0, 1, &m_vertexBufferView);
-	list->DrawInstanced(3, 1, 0, 0);
+	afSetVertexBuffer(list.Get(), m_vertexBuffer, sizeof(Vertex));
+	afDraw(list.Get(), PT_TRIANGLELIST, 3);
 
 	// Indicate that the back buffer will now be used to present.
-	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(deviceMan.GetRenderTarget().Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
 	ThrowIfFailed(list->Close());
 }
