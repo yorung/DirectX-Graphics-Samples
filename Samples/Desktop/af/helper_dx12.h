@@ -1,3 +1,5 @@
+ComPtr<ID3DBlob> afCompileShader(const char* name, const char* entryPoint, const char* target);
+
 #define SF_R32G32_FLOAT DXGI_FORMAT_R32G32_FLOAT
 #define SF_R32G32B32_FLOAT DXGI_FORMAT_R32G32B32_FLOAT
 #define SF_R32G32B32A32_FLOAT DXGI_FORMAT_R32G32B32A32_FLOAT
@@ -46,6 +48,7 @@ enum DepthStencilMode {
 };
 
 ComPtr<ID3D12PipelineState> afCreatePSO(const char *shaderName, const InputElement elements[], int numElements, BlendMode blendMode, DepthStencilMode depthStencilMode, CullMode cullMode, ComPtr<ID3D12RootSignature> rootSignature);
+ComPtr<ID3D12RootSignature> afCreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& rsDesc);
 
 #define PrimitiveTopology D3D_PRIMITIVE_TOPOLOGY
 #define PT_TRIANGLESTRIP D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP

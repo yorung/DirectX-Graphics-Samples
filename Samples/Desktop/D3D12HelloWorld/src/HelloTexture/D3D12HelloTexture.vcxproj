@@ -115,7 +115,6 @@
     <ClInclude Include="..\..\..\af\helper.h" />
     <ClInclude Include="..\..\..\af\helper_dx12.h" />
     <ClInclude Include="..\..\..\af\helper_text.h" />
-    <ClInclude Include="..\..\..\af\shader_man_dx12.h" />
     <ClInclude Include="Win32Application.h" />
     <ClInclude Include="D3D12HelloTexture.h" />
     <ClInclude Include="d3dx12.h" />
@@ -128,7 +127,6 @@
     <ClCompile Include="..\..\..\af\helper.cpp" />
     <ClCompile Include="..\..\..\af\helper_dx12.cpp" />
     <ClCompile Include="..\..\..\af\helper_win.cpp" />
-    <ClCompile Include="..\..\..\af\shader_man_dx12.cpp" />
     <ClCompile Include="Win32Application.cpp" />
     <ClCompile Include="D3D12HelloTexture.cpp" />
     <ClCompile Include="DXSample.cpp" />

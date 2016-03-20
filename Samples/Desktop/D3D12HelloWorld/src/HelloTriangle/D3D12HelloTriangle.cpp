@@ -70,9 +70,6 @@ void D3D12HelloTriangle::LoadAssets()
 
 	// Create the pipeline state, which includes compiling and loading shaders.
 	{
-		ComPtr<ID3DBlob> vertexShader = CompileShader("shaders", "VSMain", "vs_5_0");
-		ComPtr<ID3DBlob> pixelShader = CompileShader("shaders", "PSMain", "ps_5_0");
-
 		// Define the vertex input layout.
 		static InputElement inputElementDescs[] =
 		{
@@ -80,7 +77,8 @@ void D3D12HelloTriangle::LoadAssets()
 			CInputElement("COLOR", SF_R32G32B32A32_FLOAT, 12),
 		};
 
-		shaderId = shaderMan.Create("shaders", inputElementDescs, dimof(inputElementDescs), BM_NONE, DSM_DISABLE, CM_DISABLE);
+		m_rootSignature = afCreateRootSignature({ 0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT });
+		m_pipelineState = afCreatePSO("shaders", inputElementDescs, dimof(inputElementDescs), BM_NONE, DSM_DISABLE, CM_DISABLE, m_rootSignature);
 	}
 
 	// Command lists are created in the recording state, but there is nothing
@@ -147,9 +145,8 @@ void D3D12HelloTriangle::PopulateCommandList(ComPtr<ID3D12GraphicsCommandList> l
 	// re-recording.
 	ThrowIfFailed(list->Reset(deviceMan.GetCommandAllocator(), nullptr/*m_pipelineState.Get()*/));
 
-	shaderMan.Apply(shaderId, list);
-//	list->SetPipelineState(m_pipelineState.Get());
-//	list->SetGraphicsRootSignature(m_rootSignature.Get());
+	list->SetPipelineState(m_pipelineState.Get());
+	list->SetGraphicsRootSignature(m_rootSignature.Get());
 
 	// Set necessary state.
 	list->RSSetViewports(1, &m_viewport);

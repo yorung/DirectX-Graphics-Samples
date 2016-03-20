@@ -47,4 +47,3 @@ using Microsoft::WRL::ComPtr;
 #include "../../../af/helper.h"
 #include "../../../af/helper_text.h"
 #include "../../../af/device_man_dx12.h"
-#include "../../../af/shader_man_dx12.h"

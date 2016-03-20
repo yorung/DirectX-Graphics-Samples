@@ -47,7 +47,8 @@ private:
 	ComPtr<ID3D12Device> m_device;
 	ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
 	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
-	ShaderMan::SMID shaderId;
+	ComPtr<ID3D12RootSignature> m_rootSignature;
+	ComPtr<ID3D12PipelineState> m_pipelineState;
 
 	// App resources.
 	ComPtr<ID3D12Resource> m_vertexBuffer;
