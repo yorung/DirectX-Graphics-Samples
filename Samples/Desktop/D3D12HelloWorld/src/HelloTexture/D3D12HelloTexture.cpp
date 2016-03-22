@@ -36,16 +36,6 @@ void D3D12HelloTexture::LoadPipeline()
 {
 	deviceMan.Create(Win32Application::GetHwnd());
 	m_device = deviceMan.GetDevice();
-
-	// Create descriptor heaps.
-	{
-		// Describe and create a shader resource view (SRV) heap for the texture.
-		D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-		srvHeapDesc.NumDescriptors = 1;
-		srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-		ThrowIfFailed(m_device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap)));
-	}
 }
 
 // Load the sample assets.
@@ -89,16 +79,13 @@ void D3D12HelloTexture::LoadAssets()
 		IVec2 size(TextureWidth, TextureHeight);
 		std::vector<UINT8> texture = GenerateTextureData();
 		m_texture = afCreateTexture2D(DXGI_FORMAT_R8G8B8A8_UNORM, size, &texture[0]);
-
-		// Describe and create a SRV for the texture.
-		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		srvDesc.Texture2D.MipLevels = 1;
-		m_device->CreateShaderResourceView(m_texture.Get(), &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
 	}
-	
+
+	SRVID srvs[] = {
+		m_texture,
+	};
+	m_srvHeap = afCreateDescriptorHeap(_countof(srvs), srvs);
+
 	// Close the command list and execute it to begin the initial GPU setup.
 	ThrowIfFailed(deviceMan.GetCommandList()->Close());
 
