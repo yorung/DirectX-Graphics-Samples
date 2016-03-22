@@ -51,32 +51,13 @@ void D3D12HelloTexture::LoadPipeline()
 // Load the sample assets.
 void D3D12HelloTexture::LoadAssets()
 {
-	// Create the root signature.
-	{
-		D3D12_DESCRIPTOR_RANGE range = { D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND };
-		D3D12_ROOT_PARAMETER rootParameter = {};
-		rootParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-		rootParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-		rootParameter.DescriptorTable.NumDescriptorRanges = 1;
-		rootParameter.DescriptorTable.pDescriptorRanges = &range;
-
-		D3D12_STATIC_SAMPLER_DESC sampler = {};
-		sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-		sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-		sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-		sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-		sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-		sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-		sampler.MinLOD = 0.0f;
-		sampler.MaxLOD = D3D12_FLOAT32_MAX;
-		sampler.ShaderRegister = 0;
-		sampler.RegisterSpace = 0;
-		sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-		m_rootSignature = afCreateRootSignature({ 1, &rootParameter, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT });
-	}
-
-	// Create the pipeline state, which includes compiling and loading shaders.
+	Descriptor descriptors[] = {
+		CDescriptorSRV(0),
+	};
+	Sampler samplers[] = {
+		CSampler(0, SF_LINEAR, SW_REPEAT),
+	};
+	m_rootSignature = afCreateRootSignature(_countof(descriptors), descriptors, _countof(samplers), samplers);
 	static InputElement inputElementDescs[] =
 	{
 		CInputElement("POSITION", SF_R32G32B32_FLOAT, 0),

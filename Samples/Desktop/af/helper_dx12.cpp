@@ -141,11 +141,19 @@ ComPtr<ID3D12PipelineState> afCreatePSO(const char *shaderName, const InputEleme
 	return pso;
 }
 
-ComPtr<ID3D12RootSignature> afCreateRootSignature(const D3D12_ROOT_SIGNATURE_DESC& rsDesc)
+ComPtr<ID3D12RootSignature> afCreateRootSignature(int numDescriptors, Descriptor descriptors[], int numSamplers, Sampler samplers[])
 {
 	ComPtr<ID3D12RootSignature> rs;
 	ComPtr<ID3DBlob> signature;
 	ComPtr<ID3DBlob> error;
+
+	D3D12_ROOT_PARAMETER rootParameter = {};
+	rootParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameter.DescriptorTable.NumDescriptorRanges = numDescriptors;
+	rootParameter.DescriptorTable.pDescriptorRanges = descriptors;
+
+	D3D12_ROOT_SIGNATURE_DESC rsDesc = { (UINT)(numDescriptors ? 1 : 0), &rootParameter, (UINT)numSamplers, samplers, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT };
 	HRESULT hr = D3D12SerializeRootSignature(&rsDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error);
 	assert(hr == S_OK);
 	hr = deviceMan.GetDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rs));

@@ -43,18 +43,14 @@ void D3D12HelloTriangle::LoadAssets()
 {
 	GoMyDir();
 
-	// Create the pipeline state, which includes compiling and loading shaders.
+	static InputElement inputElementDescs[] =
 	{
-		// Define the vertex input layout.
-		static InputElement inputElementDescs[] =
-		{
-			CInputElement("POSITION", SF_R32G32B32_FLOAT, 0),
-			CInputElement("COLOR", SF_R32G32B32A32_FLOAT, 12),
-		};
+		CInputElement("POSITION", SF_R32G32B32_FLOAT, 0),
+		CInputElement("COLOR", SF_R32G32B32A32_FLOAT, 12),
+	};
 
-		m_rootSignature = afCreateRootSignature({ 0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT });
-		m_pipelineState = afCreatePSO("shaders", inputElementDescs, dimof(inputElementDescs), BM_NONE, DSM_DISABLE, CM_DISABLE, m_rootSignature);
-	}
+	m_rootSignature = afCreateRootSignature(0, nullptr, 0, nullptr);
+	m_pipelineState = afCreatePSO("shaders", inputElementDescs, dimof(inputElementDescs), BM_NONE, DSM_DISABLE, CM_DISABLE, m_rootSignature);
 
 	// Command lists are created in the recording state, but there is nothing
 	// to record yet. The main loop expects it to be closed, so close it now.
