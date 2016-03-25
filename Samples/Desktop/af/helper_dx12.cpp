@@ -71,6 +71,14 @@ IBOID afCreateIndexBuffer(const AFIndex* indi, int numIndi)
 	return afCreateVertexBuffer(numIndi * sizeof(AFIndex), indi);
 }
 
+UBOID afCreateUBO(int size)
+{
+	size = (size + 0xff) & ~0xff;
+	UBOID o;
+	deviceMan.GetDevice()->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(size), D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&o));
+	return o;
+}
+
 SRVID afCreateTexture2D(AFDTFormat format, const IVec2& size, void *image)
 {
 	D3D12_RESOURCE_DESC textureDesc = {};
@@ -166,7 +174,7 @@ ComPtr<ID3D12RootSignature> afCreateRootSignature(int numDescriptors, Descriptor
 
 	D3D12_ROOT_PARAMETER rootParameter = {};
 	rootParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	rootParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 	rootParameter.DescriptorTable.NumDescriptorRanges = numDescriptors;
 	rootParameter.DescriptorTable.pDescriptorRanges = descriptors;
 
@@ -188,14 +196,23 @@ ComPtr<ID3D12DescriptorHeap> afCreateDescriptorHeap(int numSrvs, SRVID srvs[])
 	HRESULT hr = deviceMan.GetDevice()->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&heap));
 	assert(hr == S_OK);
 	for (int i = 0; i < numSrvs; i++) {
-		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		srvDesc.Texture2D.MipLevels = 1;
+		D3D12_RESOURCE_DESC desc = srvs[i]->GetDesc();
 		auto ptr = heap->GetCPUDescriptorHandleForHeapStart();
 		ptr.ptr += deviceMan.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * i;
-		deviceMan.GetDevice()->CreateShaderResourceView(srvs[i].Get(), &srvDesc, ptr);
+		if (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER) {
+			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+			cbvDesc.BufferLocation = srvs[i]->GetGPUVirtualAddress();
+			cbvDesc.SizeInBytes = (UINT)desc.Width;
+			assert((cbvDesc.SizeInBytes & 0xff) == 0);
+			deviceMan.GetDevice()->CreateConstantBufferView(&cbvDesc, ptr);
+		} else {
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			srvDesc.Texture2D.MipLevels = 1;
+			deviceMan.GetDevice()->CreateShaderResourceView(srvs[i].Get(), &srvDesc, ptr);
+		}
 	}
 
 	return heap;

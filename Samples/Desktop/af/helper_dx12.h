@@ -25,6 +25,7 @@ typedef unsigned short AFIndex;
 #define AFIndexTypeToDevice DXGI_FORMAT_R16_UINT
 typedef ComPtr<ID3D12Resource> IBOID;
 typedef ComPtr<ID3D12Resource> VBOID;
+typedef ComPtr<ID3D12Resource> UBOID;
 typedef ComPtr<ID3D12Resource> SRVID;
 
 void afSetPipeline(ComPtr<ID3D12PipelineState> ps, ComPtr<ID3D12RootSignature> rs);
@@ -33,6 +34,7 @@ void afSetVertexBuffer(VBOID id, int stride);
 void afWriteBuffer(const IBOID id, const void* buf, int size);
 VBOID afCreateVertexBuffer(int size, const void* buf);
 IBOID afCreateIndexBuffer(const AFIndex* indi, int numIndi);
+UBOID afCreateUBO(int size);
 
 enum CullMode {
 	CM_DISABLE,

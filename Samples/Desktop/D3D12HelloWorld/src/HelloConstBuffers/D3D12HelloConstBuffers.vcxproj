@@ -110,6 +110,11 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\af\af_math.h" />
+    <ClInclude Include="..\..\..\af\device_man_dx12.h" />
+    <ClInclude Include="..\..\..\af\helper.h" />
+    <ClInclude Include="..\..\..\af\helper_dx12.h" />
+    <ClInclude Include="..\..\..\af\helper_text.h" />
     <ClInclude Include="Win32Application.h" />
     <ClInclude Include="D3D12HelloConstBuffers.h" />
     <ClInclude Include="d3dx12.h" />
@@ -118,6 +123,10 @@
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\af\device_man_dx12.cpp" />
+    <ClCompile Include="..\..\..\af\helper.cpp" />
+    <ClCompile Include="..\..\..\af\helper_dx12.cpp" />
+    <ClCompile Include="..\..\..\af\helper_win.cpp" />
     <ClCompile Include="Win32Application.cpp" />
     <ClCompile Include="D3D12HelloConstBuffers.cpp" />
     <ClCompile Include="DXSample.cpp" />

@@ -19,6 +19,9 @@
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers.
 #endif
 
+#define NOMINMAX
+#define _USE_MATH_DEFINES
+
 #include <windows.h>
 
 #include <d3d12.h>
@@ -30,3 +33,18 @@
 #include <string>
 #include <wrl.h>
 #include <shellapi.h>
+
+#include <cmath>
+#include <string>
+#include <algorithm>
+#include <vector>
+#include <map>
+#include <random>
+#include <chrono>
+
+using Microsoft::WRL::ComPtr;
+#include "../../../af/af_math.h"
+#include "../../../af/helper_dx12.h"
+#include "../../../af/helper.h"
+#include "../../../af/helper_text.h"
+#include "../../../af/device_man_dx12.h"
