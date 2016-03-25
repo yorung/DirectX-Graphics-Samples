@@ -27,7 +27,6 @@ void D3D12HelloTriangle::OnInit()
 void D3D12HelloTriangle::LoadPipeline()
 {
 	deviceMan.Create(Win32Application::GetHwnd());
-	m_device = deviceMan.GetDevice();
 }
 
 // Load the sample assets.
@@ -72,25 +71,13 @@ void D3D12HelloTriangle::OnUpdate()
 // Render the scene.
 void D3D12HelloTriangle::OnRender()
 {
-	// Record all the commands we need to render the scene into the command list.
-	PopulateCommandList(deviceMan.GetCommandList());
-
+	afSetPipeline(m_pipelineState, m_rootSignature);
+	afSetVertexBuffer(m_vertexBuffer, sizeof(Vertex));
+	afDraw(PT_TRIANGLELIST, 3);
 	deviceMan.Present();
 }
 
 void D3D12HelloTriangle::OnDestroy()
 {
 	deviceMan.Destroy();
-}
-
-void D3D12HelloTriangle::PopulateCommandList(ComPtr<ID3D12GraphicsCommandList> list)
-{
-	list->SetPipelineState(m_pipelineState.Get());
-	list->SetGraphicsRootSignature(m_rootSignature.Get());
-
-	deviceMan.SetRenderTarget();
-
-	// Record commands.
-	afSetVertexBuffer(list.Get(), m_vertexBuffer, sizeof(Vertex));
-	afDraw(list.Get(), PT_TRIANGLELIST, 3);
 }

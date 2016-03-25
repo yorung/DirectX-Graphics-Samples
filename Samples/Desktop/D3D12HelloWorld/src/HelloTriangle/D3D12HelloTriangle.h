@@ -42,7 +42,6 @@ private:
 	};
 
 	// Pipeline objects.
-	ComPtr<ID3D12Device> m_device;
 	ComPtr<ID3D12RootSignature> m_rootSignature;
 	ComPtr<ID3D12PipelineState> m_pipelineState;
 
@@ -51,5 +50,4 @@ private:
 
 	void LoadPipeline();
 	void LoadAssets();
-	void PopulateCommandList(ComPtr<ID3D12GraphicsCommandList> list);
 };

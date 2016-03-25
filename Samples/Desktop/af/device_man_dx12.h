@@ -16,12 +16,12 @@ class DeviceManDX12
 	void BeginScene();
 	void EndScene();
 	void WaitForPreviousFrame();
+	void SetRenderTarget();
 public:
 	~DeviceManDX12();
 	void Create(HWND hWnd);
 	void Destroy();
 	void Present();
-	void SetRenderTarget();
 	ComPtr<ID3D12Device> GetDevice() { return device; }
 	ComPtr<IDXGIFactory4> GetFactory() { return factory; }
 	ComPtr<IDXGISwapChain3> GetSwapChain() { return swapChain; }

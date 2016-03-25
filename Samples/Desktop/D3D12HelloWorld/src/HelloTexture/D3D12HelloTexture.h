@@ -44,7 +44,6 @@ private:
 	};
 
 	// Pipeline objects.
-	ComPtr<ID3D12Device> m_device;
 	ComPtr<ID3D12RootSignature> m_rootSignature;
 	ComPtr<ID3D12DescriptorHeap> m_srvHeap;
 	ComPtr<ID3D12PipelineState> m_pipelineState;
@@ -56,5 +55,4 @@ private:
 	void LoadPipeline();
 	void LoadAssets();
 	std::vector<UINT8> GenerateTextureData();
-	void PopulateCommandList(ID3D12GraphicsCommandList* list);
 };

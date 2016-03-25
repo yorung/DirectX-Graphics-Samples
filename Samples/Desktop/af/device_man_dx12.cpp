@@ -77,6 +77,8 @@ void DeviceManDX12::BeginScene()
 	D3D12_RECT rc = {0, 0, (LONG)desc.BufferDesc.Width, (LONG)desc.BufferDesc.Height};
 	commandList->RSSetViewports(1, &vp);
 	commandList->RSSetScissorRects(1, &rc);
+
+	SetRenderTarget();
 }
 
 void DeviceManDX12::EndScene()

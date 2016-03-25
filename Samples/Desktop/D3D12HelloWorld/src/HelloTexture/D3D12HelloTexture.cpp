@@ -27,7 +27,6 @@ void D3D12HelloTexture::OnInit()
 void D3D12HelloTexture::LoadPipeline()
 {
 	deviceMan.Create(Win32Application::GetHwnd());
-	m_device = deviceMan.GetDevice();
 }
 
 // Load the sample assets.
@@ -124,27 +123,15 @@ void D3D12HelloTexture::OnUpdate()
 // Render the scene.
 void D3D12HelloTexture::OnRender()
 {
-	PopulateCommandList(deviceMan.GetCommandList());
+	afSetPipeline(m_pipelineState, m_rootSignature);
+	afSetHeap(m_srvHeap);
+	afSetVertexBuffer(m_vertexBuffer, sizeof(Vertex));
+	afDraw(PT_TRIANGLELIST, 3);
+
 	deviceMan.Present();
 }
 
 void D3D12HelloTexture::OnDestroy()
 {
 	deviceMan.Destroy();
-}
-
-void D3D12HelloTexture::PopulateCommandList(ID3D12GraphicsCommandList* list)
-{
-	list->SetPipelineState(m_pipelineState.Get());
-	list->SetGraphicsRootSignature(m_rootSignature.Get());
-
-	ID3D12DescriptorHeap* ppHeaps[] = { m_srvHeap.Get() };
-	list->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-	D3D12_GPU_DESCRIPTOR_HANDLE pos = m_srvHeap->GetGPUDescriptorHandleForHeapStart();
-	list->SetGraphicsRootDescriptorTable(0, pos);
-
-	deviceMan.SetRenderTarget();
-
-	afSetVertexBuffer(list, m_vertexBuffer, sizeof(Vertex));
-	afDraw(list, PT_TRIANGLELIST, 3);
 }

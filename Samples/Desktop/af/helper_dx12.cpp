@@ -20,8 +20,23 @@ ComPtr<ID3DBlob> afCompileShader(const char* name, const char* entryPoint, const
 	return blob;
 }
 
-void afSetVertexBuffer(ID3D12GraphicsCommandList* list, VBOID id, int stride)
+void afSetPipeline(ComPtr<ID3D12PipelineState> ps, ComPtr<ID3D12RootSignature> rs)
 {
+	ID3D12GraphicsCommandList* list = deviceMan.GetCommandList();
+	list->SetPipelineState(ps.Get());
+	list->SetGraphicsRootSignature(rs.Get());
+}
+
+void afSetHeap(ComPtr<ID3D12DescriptorHeap> heap)
+{
+	ID3D12DescriptorHeap* ppHeaps[] = { heap.Get() };
+	deviceMan.GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+	deviceMan.GetCommandList()->SetGraphicsRootDescriptorTable(0, heap->GetGPUDescriptorHandleForHeapStart());
+}
+
+void afSetVertexBuffer(VBOID id, int stride)
+{
+	ID3D12GraphicsCommandList* list = deviceMan.GetCommandList();
 	D3D12_RESOURCE_DESC desc = id->GetDesc();
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView = { id->GetGPUVirtualAddress(), (UINT)desc.Width, (UINT)stride };
 	list->IASetVertexBuffers(0, 1, &vertexBufferView);
@@ -89,14 +104,16 @@ SRVID afCreateTexture2D(AFDTFormat format, const struct TexDesc& desc, int mipCo
 	return SRVID();
 }
 
-void afDrawIndexed(ID3D12GraphicsCommandList* list, PrimitiveTopology pt, int numIndices, int start, int instanceCount)
+void afDrawIndexed(PrimitiveTopology pt, int numIndices, int start, int instanceCount)
 {
+	ID3D12GraphicsCommandList* list = deviceMan.GetCommandList();
 	list->IASetPrimitiveTopology(pt);
 	list->DrawIndexedInstanced(numIndices, instanceCount, start, 0, 0);
 }
 
-void afDraw(ID3D12GraphicsCommandList* list, PrimitiveTopology pt, int numVertices, int start, int instanceCount)
+void afDraw(PrimitiveTopology pt, int numVertices, int start, int instanceCount)
 {
+	ID3D12GraphicsCommandList* list = deviceMan.GetCommandList();
 	list->IASetPrimitiveTopology(pt);
 	list->DrawInstanced(numVertices, instanceCount, start, 0);
 }

@@ -27,7 +27,9 @@ typedef ComPtr<ID3D12Resource> IBOID;
 typedef ComPtr<ID3D12Resource> VBOID;
 typedef ComPtr<ID3D12Resource> SRVID;
 
-void afSetVertexBuffer(ID3D12GraphicsCommandList* list, VBOID id, int stride);
+void afSetPipeline(ComPtr<ID3D12PipelineState> ps, ComPtr<ID3D12RootSignature> rs);
+void afSetHeap(ComPtr<ID3D12DescriptorHeap> heap);
+void afSetVertexBuffer(VBOID id, int stride);
 void afWriteBuffer(const IBOID id, const void* buf, int size);
 VBOID afCreateVertexBuffer(int size, const void* buf);
 IBOID afCreateIndexBuffer(const AFIndex* indi, int numIndi);
@@ -110,8 +112,8 @@ ComPtr<ID3D12RootSignature> afCreateRootSignature(int numDescriptors, Descriptor
 #define PT_TRIANGLELIST D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST
 #define PT_LINELIST D3D_PRIMITIVE_TOPOLOGY_LINELIST
 
-void afDrawIndexed(ID3D12GraphicsCommandList* list, PrimitiveTopology pt, int numIndices, int start = 0, int instanceCount = 1);
-void afDraw(ID3D12GraphicsCommandList* list, PrimitiveTopology pt, int numVertices, int start = 0, int instanceCount = 1);
+void afDrawIndexed(PrimitiveTopology pt, int numIndices, int start = 0, int instanceCount = 1);
+void afDraw(PrimitiveTopology pt, int numVertices, int start = 0, int instanceCount = 1);
 
 typedef D3D12_SUBRESOURCE_DATA AFTexSubresourceData;
 typedef DXGI_FORMAT AFDTFormat;
