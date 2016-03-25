@@ -13,12 +13,14 @@ class DeviceManDX12
 	HANDLE fenceEvent = INVALID_HANDLE_VALUE;
 	UINT64 fenceValue = 1;
 	UINT frameIndex = 0;
+	void BeginScene();
+	void EndScene();
+	void WaitForPreviousFrame();
 public:
 	~DeviceManDX12();
 	void Create(HWND hWnd);
 	void Destroy();
 	void Present();
-	void WaitForPreviousFrame();
 	void SetRenderTarget();
 	ComPtr<ID3D12Device> GetDevice() { return device; }
 	ComPtr<IDXGIFactory4> GetFactory() { return factory; }

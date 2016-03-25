@@ -52,10 +52,6 @@ void D3D12HelloTriangle::LoadAssets()
 	m_rootSignature = afCreateRootSignature(0, nullptr, 0, nullptr);
 	m_pipelineState = afCreatePSO("shaders", inputElementDescs, dimof(inputElementDescs), BM_NONE, DSM_DISABLE, CM_DISABLE, m_rootSignature);
 
-	// Command lists are created in the recording state, but there is nothing
-	// to record yet. The main loop expects it to be closed, so close it now.
-	ThrowIfFailed(deviceMan.GetCommandList()->Close());
-
 	// Create the vertex buffer.
 	{
 		// Define the geometry for a triangle.
@@ -74,8 +70,6 @@ void D3D12HelloTriangle::LoadAssets()
 		// code simplicity and because there are very few verts to actually transfer.
 		m_vertexBuffer = afCreateVertexBuffer(vertexBufferSize, triangleVertices);
 	}
-
-	deviceMan.WaitForPreviousFrame();
 }
 
 // Update frame-based values.
@@ -99,16 +93,6 @@ void D3D12HelloTriangle::OnDestroy()
 
 void D3D12HelloTriangle::PopulateCommandList(ComPtr<ID3D12GraphicsCommandList> list)
 {
-	// Command list allocators can only be reset when the associated 
-	// command lists have finished execution on the GPU; apps should use 
-	// fences to determine GPU execution progress.
-	ThrowIfFailed(deviceMan.GetCommandAllocator()->Reset());
-
-	// However, when ExecuteCommandList() is called on a particular command 
-	// list, that command list can then be reset at any time and must be before 
-	// re-recording.
-	ThrowIfFailed(list->Reset(deviceMan.GetCommandAllocator(), nullptr/*m_pipelineState.Get()*/));
-
 	list->SetPipelineState(m_pipelineState.Get());
 	list->SetGraphicsRootSignature(m_rootSignature.Get());
 
@@ -116,17 +100,9 @@ void D3D12HelloTriangle::PopulateCommandList(ComPtr<ID3D12GraphicsCommandList> l
 	list->RSSetViewports(1, &m_viewport);
 	list->RSSetScissorRects(1, &m_scissorRect);
 
-	// Indicate that the back buffer will be used as a render target.
-	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(deviceMan.GetRenderTarget().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
 	deviceMan.SetRenderTarget();
 
 	// Record commands.
 	afSetVertexBuffer(list.Get(), m_vertexBuffer, sizeof(Vertex));
 	afDraw(list.Get(), PT_TRIANGLELIST, 3);
-
-	// Indicate that the back buffer will now be used to present.
-	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(deviceMan.GetRenderTarget().Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
-
-	ThrowIfFailed(list->Close());
 }

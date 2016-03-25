@@ -61,13 +61,31 @@ void DeviceManDX12::SetRenderTarget()
 	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 }
 
-void DeviceManDX12::Present()
+void DeviceManDX12::BeginScene()
 {
+	WaitForPreviousFrame();
+	commandAllocator->Reset();
+	commandList->Reset(commandAllocator.Get(), nullptr);
+	frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
+	D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE,{ deviceMan.GetRenderTarget().Get(), 0, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET } };
+	commandList->ResourceBarrier(1, &barrier);
+}
+
+void DeviceManDX12::EndScene()
+{
+	D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE,{ deviceMan.GetRenderTarget().Get(), 0, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT } };
+	commandList->ResourceBarrier(1, &barrier);
+
+	commandList->Close();
 	ID3D12CommandList* lists[] = { commandList.Get() };
 	commandQueue->ExecuteCommandLists(_countof(lists), lists);
+}
+
+void DeviceManDX12::Present()
+{
+	EndScene();
 	swapChain->Present(1, 0);
-	WaitForPreviousFrame();
-	frameIndex = swapChain->GetCurrentBackBufferIndex();
+	BeginScene();
 }
 
 void DeviceManDX12::Create(HWND hWnd)
@@ -147,6 +165,7 @@ void DeviceManDX12::Create(HWND hWnd)
 	factory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER);
 	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator));
 	device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList));
+	commandList->Close();
 
 	if (S_OK != device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))) {
 		Destroy();
@@ -155,5 +174,5 @@ void DeviceManDX12::Create(HWND hWnd)
 	fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	assert (fenceEvent);
 
-	frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
+	BeginScene();
 }

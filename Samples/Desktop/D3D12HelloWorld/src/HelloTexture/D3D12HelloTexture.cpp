@@ -85,11 +85,6 @@ void D3D12HelloTexture::LoadAssets()
 		m_texture,
 	};
 	m_srvHeap = afCreateDescriptorHeap(_countof(srvs), srvs);
-
-	// Close the command list and execute it to begin the initial GPU setup.
-	ThrowIfFailed(deviceMan.GetCommandList()->Close());
-
-	deviceMan.WaitForPreviousFrame();
 }
 
 // Generate a simple black and white checkerboard texture.
@@ -137,9 +132,7 @@ void D3D12HelloTexture::OnUpdate()
 // Render the scene.
 void D3D12HelloTexture::OnRender()
 {
-	// Record all the commands we need to render the scene into the command list.
 	PopulateCommandList(deviceMan.GetCommandList());
-
 	deviceMan.Present();
 }
 
@@ -150,17 +143,6 @@ void D3D12HelloTexture::OnDestroy()
 
 void D3D12HelloTexture::PopulateCommandList(ID3D12GraphicsCommandList* list)
 {
-	// Command list allocators can only be reset when the associated 
-	// command lists have finished execution on the GPU; apps should use 
-	// fences to determine GPU execution progress.
-	ThrowIfFailed(deviceMan.GetCommandAllocator()->Reset());
-
-	// However, when ExecuteCommandList() is called on a particular command 
-	// list, that command list can then be reset at any time and must be before 
-	// re-recording.
-	ThrowIfFailed(list->Reset(deviceMan.GetCommandAllocator(), nullptr));
-
-	// Set necessary state.
 	list->SetPipelineState(m_pipelineState.Get());
 	list->SetGraphicsRootSignature(m_rootSignature.Get());
 
@@ -172,16 +154,8 @@ void D3D12HelloTexture::PopulateCommandList(ID3D12GraphicsCommandList* list)
 	list->RSSetViewports(1, &m_viewport);
 	list->RSSetScissorRects(1, &m_scissorRect);
 
-	// Indicate that the back buffer will be used as a render target.
-	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(deviceMan.GetRenderTarget().Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
 	deviceMan.SetRenderTarget();
 
 	afSetVertexBuffer(list, m_vertexBuffer, sizeof(Vertex));
 	afDraw(list, PT_TRIANGLELIST, 3);
-
-	// Indicate that the back buffer will now be used to present.
-	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(deviceMan.GetRenderTarget().Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
-
-	ThrowIfFailed(list->Close());
 }
