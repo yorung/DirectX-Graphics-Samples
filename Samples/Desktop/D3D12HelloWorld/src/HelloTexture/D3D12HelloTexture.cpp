@@ -13,16 +13,8 @@
 #include "D3D12HelloTexture.h"
 
 D3D12HelloTexture::D3D12HelloTexture(UINT width, UINT height, std::wstring name) :
-	DXSample(width, height, name),
-	m_viewport(),
-	m_scissorRect()
+	DXSample(width, height, name)
 {
-	m_viewport.Width = static_cast<float>(width);
-	m_viewport.Height = static_cast<float>(height);
-	m_viewport.MaxDepth = 1.0f;
-
-	m_scissorRect.right = static_cast<LONG>(width);
-	m_scissorRect.bottom = static_cast<LONG>(height);
 }
 
 void D3D12HelloTexture::OnInit()
@@ -150,9 +142,6 @@ void D3D12HelloTexture::PopulateCommandList(ID3D12GraphicsCommandList* list)
 	list->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 	D3D12_GPU_DESCRIPTOR_HANDLE pos = m_srvHeap->GetGPUDescriptorHandleForHeapStart();
 	list->SetGraphicsRootDescriptorTable(0, pos);
-
-	list->RSSetViewports(1, &m_viewport);
-	list->RSSetScissorRects(1, &m_scissorRect);
 
 	deviceMan.SetRenderTarget();
 

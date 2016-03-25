@@ -69,6 +69,14 @@ void DeviceManDX12::BeginScene()
 	frameIndex = deviceMan.GetSwapChain()->GetCurrentBackBufferIndex();
 	D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE,{ deviceMan.GetRenderTarget().Get(), 0, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET } };
 	commandList->ResourceBarrier(1, &barrier);
+
+	DXGI_SWAP_CHAIN_DESC desc;
+	deviceMan.GetSwapChain()->GetDesc(&desc);
+
+	D3D12_VIEWPORT vp = {0.f, 0.f, (float)desc.BufferDesc.Width, (float)desc.BufferDesc.Height, 0.f, 1.f};
+	D3D12_RECT rc = {0, 0, (LONG)desc.BufferDesc.Width, (LONG)desc.BufferDesc.Height};
+	commandList->RSSetViewports(1, &vp);
+	commandList->RSSetScissorRects(1, &rc);
 }
 
 void DeviceManDX12::EndScene()

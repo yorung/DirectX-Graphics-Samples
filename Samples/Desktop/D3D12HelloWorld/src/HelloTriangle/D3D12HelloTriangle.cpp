@@ -13,16 +13,8 @@
 #include "D3D12HelloTriangle.h"
 
 D3D12HelloTriangle::D3D12HelloTriangle(UINT width, UINT height, std::wstring name) :
-	DXSample(width, height, name),
-	m_viewport(),
-	m_scissorRect()
+	DXSample(width, height, name)
 {
-	m_viewport.Width = static_cast<float>(width);
-	m_viewport.Height = static_cast<float>(height);
-	m_viewport.MaxDepth = 1.0f;
-
-	m_scissorRect.right = static_cast<LONG>(width);
-	m_scissorRect.bottom = static_cast<LONG>(height);
 }
 
 void D3D12HelloTriangle::OnInit()
@@ -95,10 +87,6 @@ void D3D12HelloTriangle::PopulateCommandList(ComPtr<ID3D12GraphicsCommandList> l
 {
 	list->SetPipelineState(m_pipelineState.Get());
 	list->SetGraphicsRootSignature(m_rootSignature.Get());
-
-	// Set necessary state.
-	list->RSSetViewports(1, &m_viewport);
-	list->RSSetScissorRects(1, &m_scissorRect);
 
 	deviceMan.SetRenderTarget();
 
