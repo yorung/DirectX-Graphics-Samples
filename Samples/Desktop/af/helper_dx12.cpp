@@ -79,6 +79,19 @@ UBOID afCreateUBO(int size)
 	return o;
 }
 
+void afWriteTexture(SRVID id, const TexDesc& desc, const void* buf)
+{
+	const UINT64 uploadSize = GetRequiredIntermediateSize(id.Get(), 0, 1);
+	ComPtr<ID3D12Resource> uploadBuf;
+	deviceMan.GetDevice()->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(uploadSize), D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&uploadBuf));
+	ID3D12GraphicsCommandList* list = deviceMan.GetCommandList();
+	D3D12_SUBRESOURCE_DATA textureData = { buf, desc.size.x * 4, desc.size.x * desc.size.y * 4 };
+	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(id.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST));
+	UpdateSubresources(list, id.Get(), uploadBuf.Get(), 0, 0, 1, &textureData);
+	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(id.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ));
+	deviceMan.Flush();
+}
+
 SRVID afCreateTexture2D(AFDTFormat format, const IVec2& size, void *image)
 {
 	D3D12_RESOURCE_DESC textureDesc = {};
@@ -94,15 +107,16 @@ SRVID afCreateTexture2D(AFDTFormat format, const IVec2& size, void *image)
 
 	SRVID id;
 	HRESULT hr = deviceMan.GetDevice()->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
 		&textureDesc,
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(&id));
 
-	D3D12_BOX box = { 0, 0, 0, (UINT)size.x, (UINT)size.y, 1 };
-	id->WriteToSubresource(0, &box, image, size.x * 4, size.x * size.y * 4);
+	TexDesc texDesc;
+	texDesc.size = size;
+	afWriteTexture(id, texDesc, image);
 	return id;
 }
 

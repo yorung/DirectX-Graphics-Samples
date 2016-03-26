@@ -22,6 +22,7 @@ public:
 	void Create(HWND hWnd);
 	void Destroy();
 	void Present();
+	void Flush();
 	ComPtr<ID3D12Device> GetDevice() { return device; }
 	ComPtr<IDXGIFactory4> GetFactory() { return factory; }
 	ComPtr<IDXGISwapChain3> GetSwapChain() { return swapChain; }

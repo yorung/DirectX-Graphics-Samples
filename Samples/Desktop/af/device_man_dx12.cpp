@@ -91,6 +91,16 @@ void DeviceManDX12::EndScene()
 	commandQueue->ExecuteCommandLists(_countof(lists), lists);
 }
 
+void DeviceManDX12::Flush()
+{
+	commandList->Close();
+	ID3D12CommandList* lists[] = { commandList.Get() };
+	commandQueue->ExecuteCommandLists(_countof(lists), lists);
+	WaitForPreviousFrame();
+	commandAllocator->Reset();
+	commandList->Reset(commandAllocator.Get(), nullptr);
+}
+
 void DeviceManDX12::Present()
 {
 	EndScene();
