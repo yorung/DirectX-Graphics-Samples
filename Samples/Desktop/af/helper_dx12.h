@@ -32,6 +32,7 @@ void afSetPipeline(ComPtr<ID3D12PipelineState> ps, ComPtr<ID3D12RootSignature> r
 void afSetHeap(ComPtr<ID3D12DescriptorHeap> heap);
 void afSetVertexBuffer(VBOID id, int stride);
 void afWriteBuffer(const IBOID id, const void* buf, int size);
+ComPtr<ID3D12Resource> afCreateBuffer(int size, const void* buf = nullptr);
 VBOID afCreateVertexBuffer(int size, const void* buf);
 IBOID afCreateIndexBuffer(const AFIndex* indi, int numIndi);
 UBOID afCreateUBO(int size);

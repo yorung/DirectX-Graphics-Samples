@@ -56,38 +56,46 @@ void afWriteBuffer(const IBOID id, const void* buf, int size)
 	id->Unmap(0, nullptr);
 }
 
+ComPtr<ID3D12Resource> afCreateBuffer(int size, const void* buf)
+{
+	UBOID o;
+	deviceMan.GetDevice()->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(size), D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&o));
+	if (buf) {
+		afWriteBuffer(o, buf, size);
+	}
+	return o;
+}
+
 VBOID afCreateVertexBuffer(int size, const void* buf)
 {
-	VBOID v;
-	deviceMan.GetDevice()->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(size), D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&v));
-	if (buf) {
-		afWriteBuffer(v, buf, size);
-	}
-	return v;
+	return afCreateBuffer(size, buf);
 }
 
 IBOID afCreateIndexBuffer(const AFIndex* indi, int numIndi)
 {
-	return afCreateVertexBuffer(numIndi * sizeof(AFIndex), indi);
+	return afCreateBuffer(numIndi * sizeof(AFIndex), indi);
 }
 
 UBOID afCreateUBO(int size)
 {
-	size = (size + 0xff) & ~0xff;
-	UBOID o;
-	deviceMan.GetDevice()->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(size), D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&o));
-	return o;
+	return afCreateBuffer((size + 0xff) & ~0xff);
 }
 
 void afWriteTexture(SRVID id, const TexDesc& desc, const void* buf)
 {
-	const UINT64 uploadSize = GetRequiredIntermediateSize(id.Get(), 0, 1);
-	ComPtr<ID3D12Resource> uploadBuf;
-	deviceMan.GetDevice()->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(uploadSize), D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&uploadBuf));
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
+	UINT numRow;
+	UINT64 uploadSize, rowSizeInBytes;
+	D3D12_RESOURCE_DESC destDesc = id->GetDesc();
+	deviceMan.GetDevice()->GetCopyableFootprints(&destDesc, 0, 1, 0, &footprint, &numRow, &rowSizeInBytes, &uploadSize);
+	ComPtr<ID3D12Resource> uploadBuf = afCreateBuffer((int)uploadSize, buf);
+	D3D12_TEXTURE_COPY_LOCATION uploadBufLocation = { uploadBuf.Get(), D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, footprint }, nativeBufLocation = { id.Get(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, 0 };
 	ID3D12GraphicsCommandList* list = deviceMan.GetCommandList();
-	D3D12_SUBRESOURCE_DATA textureData = { buf, desc.size.x * 4, desc.size.x * desc.size.y * 4 };
 	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(id.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST));
-	UpdateSubresources(list, id.Get(), uploadBuf.Get(), 0, 0, 1, &textureData);
+	list->CopyTextureRegion(&nativeBufLocation, 0, 0, 0, &uploadBufLocation, nullptr);
+//	D3D12_SUBRESOURCE_DATA textureData = { buf, desc.size.x * 4, desc.size.x * desc.size.y * 4 };
+//	UpdateSubresources(list, id.Get(), uploadBuf.Get(), 0, 0, 1, &textureData);
+//	UpdateSubresources(list, id.Get(), uploadBuf.Get(), 0, 1, uploadSize, &footprint, &numRow, &rowSizeInBytes, &textureData);
 	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(id.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ));
 	deviceMan.Flush();
 }
