@@ -51,9 +51,11 @@ void afWriteBuffer(const IBOID id, const void* buf, int size)
 	}
 #endif
 	void* p;
-	id->Map(0, nullptr, &p);
+	D3D12_RANGE readRange = {};
+	id->Map(0, &readRange, &p);
 	memcpy(p, buf, size);
-	id->Unmap(0, nullptr);
+	D3D12_RANGE wroteRange = {0, size};
+	id->Unmap(0, &wroteRange);
 }
 
 ComPtr<ID3D12Resource> afCreateBuffer(int size, const void* buf)
