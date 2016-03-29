@@ -124,7 +124,7 @@ void D3D12HelloTexture::OnUpdate()
 void D3D12HelloTexture::OnRender()
 {
 	afSetPipeline(m_pipelineState, m_rootSignature);
-	afSetHeap(m_srvHeap);
+	afSetDescriptorHeap(m_srvHeap);
 	afSetVertexBuffer(m_vertexBuffer, sizeof(Vertex));
 	afDraw(PT_TRIANGLELIST, 3);
 

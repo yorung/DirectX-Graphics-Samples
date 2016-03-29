@@ -29,7 +29,7 @@ typedef ComPtr<ID3D12Resource> UBOID;
 typedef ComPtr<ID3D12Resource> SRVID;
 
 void afSetPipeline(ComPtr<ID3D12PipelineState> ps, ComPtr<ID3D12RootSignature> rs);
-void afSetHeap(ComPtr<ID3D12DescriptorHeap> heap);
+void afSetDescriptorHeap(ComPtr<ID3D12DescriptorHeap> heap);
 void afSetVertexBuffer(VBOID id, int stride);
 void afWriteBuffer(const IBOID id, const void* buf, int size);
 ComPtr<ID3D12Resource> afCreateBuffer(int size, const void* buf = nullptr);

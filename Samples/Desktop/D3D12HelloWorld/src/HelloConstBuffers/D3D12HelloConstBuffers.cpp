@@ -94,7 +94,7 @@ void D3D12HelloConstBuffers::OnUpdate()
 void D3D12HelloConstBuffers::OnRender()
 {
 	afSetPipeline(m_pipelineState, m_rootSignature);
-	afSetHeap(m_cbvHeap);
+	afSetDescriptorHeap(m_cbvHeap);
 	afSetVertexBuffer(m_vertexBuffer, sizeof(Vertex));
 	afDraw(PT_TRIANGLELIST, 3);
 

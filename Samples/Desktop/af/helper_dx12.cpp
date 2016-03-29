@@ -27,7 +27,7 @@ void afSetPipeline(ComPtr<ID3D12PipelineState> ps, ComPtr<ID3D12RootSignature> r
 	list->SetGraphicsRootSignature(rs.Get());
 }
 
-void afSetHeap(ComPtr<ID3D12DescriptorHeap> heap)
+void afSetDescriptorHeap(ComPtr<ID3D12DescriptorHeap> heap)
 {
 	ID3D12DescriptorHeap* ppHeaps[] = { heap.Get() };
 	deviceMan.GetCommandList()->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
