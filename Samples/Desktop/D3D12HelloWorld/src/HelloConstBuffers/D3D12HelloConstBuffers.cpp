@@ -13,8 +13,7 @@
 #include "D3D12HelloConstBuffers.h"
 
 D3D12HelloConstBuffers::D3D12HelloConstBuffers(UINT width, UINT height, std::wstring name) :
-	DXSample(width, height, name),
-	m_pCbvDataBegin(nullptr)
+	DXSample(width, height, name)
 {
 }
 
@@ -69,10 +68,7 @@ void D3D12HelloConstBuffers::LoadAssets()
 		// Initialize and map the constant buffers. We don't unmap this until the
 		// app closes. Keeping things mapped for the lifetime of the resource is okay.
 		ZeroMemory(&m_constantBufferData, sizeof(m_constantBufferData));
-
-		CD3DX12_RANGE readRange(0, 0);		// We do not intend to read from this resource on the CPU.
-		ThrowIfFailed(m_constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_pCbvDataBegin)));
-		memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));
+		afWriteBuffer(m_constantBuffer, &m_constantBufferData, sizeof(m_constantBufferData));
 	}
 }
 
@@ -87,7 +83,7 @@ void D3D12HelloConstBuffers::OnUpdate()
 	{
 		m_constantBufferData.offset.x = -offsetBounds;
 	}
-	memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));
+	afWriteBuffer(m_constantBuffer, &m_constantBufferData, sizeof(m_constantBufferData));
 }
 
 // Render the scene.

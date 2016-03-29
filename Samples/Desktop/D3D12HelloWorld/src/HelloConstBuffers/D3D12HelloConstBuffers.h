@@ -53,7 +53,6 @@ private:
 	ComPtr<ID3D12Resource> m_vertexBuffer;
 	ComPtr<ID3D12Resource> m_constantBuffer;
 	ConstantBuffer m_constantBufferData;
-	UINT8* m_pCbvDataBegin;
 
 	void LoadPipeline();
 	void LoadAssets();
