@@ -95,12 +95,12 @@ void afWriteTexture(SRVID id, const TexDesc& desc, const void* buf)
 	ComPtr<ID3D12Resource> uploadBuf = afCreateBuffer((int)uploadSize, buf);
 	D3D12_TEXTURE_COPY_LOCATION uploadBufLocation = { uploadBuf.Get(), D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT, footprint }, nativeBufLocation = { id.Get(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, 0 };
 	ID3D12GraphicsCommandList* list = deviceMan.GetCommandList();
-	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(id.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST));
+
+	D3D12_RESOURCE_BARRIER transition1 = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE, { id.Get(), 0, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST } };
+	list->ResourceBarrier(1, &transition1);
 	list->CopyTextureRegion(&nativeBufLocation, 0, 0, 0, &uploadBufLocation, nullptr);
-//	D3D12_SUBRESOURCE_DATA textureData = { buf, desc.size.x * 4, desc.size.x * desc.size.y * 4 };
-//	UpdateSubresources(list, id.Get(), uploadBuf.Get(), 0, 0, 1, &textureData);
-//	UpdateSubresources(list, id.Get(), uploadBuf.Get(), 0, 1, uploadSize, &footprint, &numRow, &rowSizeInBytes, &textureData);
-	list->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(id.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ));
+	D3D12_RESOURCE_BARRIER transition2 = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE, { id.Get(), 0, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ } };
+	list->ResourceBarrier(1, &transition2);
 	deviceMan.Flush();
 }
 
