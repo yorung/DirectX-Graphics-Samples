@@ -30,7 +30,6 @@
 #include <DirectXMath.h>
 #include "d3dx12.h"
 
-#include <string>
 #include <wrl.h>
 #include <shellapi.h>
 
